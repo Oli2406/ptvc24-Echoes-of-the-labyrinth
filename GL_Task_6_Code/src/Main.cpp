@@ -3,6 +3,7 @@
  * Institute of Computer Graphics and Algorithms.
  * This file is part of the GCG Lab Framework and must not be redistributed.
  */
+// Badie:Hallo
 
 #include "Utils.h"
 #include <sstream>
