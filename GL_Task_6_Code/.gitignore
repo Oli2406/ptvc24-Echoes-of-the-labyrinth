@@ -82,3 +82,6 @@ Tools/**/*.cache
 
 # MacOS
 .DS_Store
+
+*.blend
+*.blend1
