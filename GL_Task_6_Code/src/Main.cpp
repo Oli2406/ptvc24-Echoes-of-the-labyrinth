@@ -15,6 +15,8 @@
 #include "Material.h"
 #include "Light.h"
 #include "Texture.h"
+#include "SOIL2/SOIL2.h"
+#include "Model.h"
 
 
 #undef min
