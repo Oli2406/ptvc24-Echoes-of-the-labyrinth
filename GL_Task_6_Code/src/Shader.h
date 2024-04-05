@@ -200,4 +200,12 @@ class Shader {
      * @param f: the value to be set
      */
     void setUniformArr(std::string arr, unsigned int i, std::string prop, const float f);
+
+    /*!
+    * Gets the handle of the shader program
+    * @return the handle of the shader program
+    */
+    GLuint getHandle() const {
+        return _handle;
+    }
 };

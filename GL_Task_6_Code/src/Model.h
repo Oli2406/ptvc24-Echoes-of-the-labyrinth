@@ -10,12 +10,13 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "SOIL2/SOIL2.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-
+#include <SOIL2/SOIL2.h>
 #include "Mesh.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
 
 using namespace std;
 
@@ -32,7 +33,7 @@ public:
     }
     
     // Draws the model, and thus all its meshes
-    void Draw( Shader shader )
+    void Draw( std::shared_ptr<Shader> shader )
     {
         for ( GLuint i = 0; i < this->meshes.size( ); i++ )
         {
@@ -153,7 +154,7 @@ private:
             // Normal: texture_normalN
             
             // 1. Diffuse maps
-            vector<Text> diffuseMaps = this->loadMaterialTextures( material, aiTextureType_DIFFUSE, "texture_diffuse" );
+            vector<Text> diffuseMaps = this->loadMaterialTextures( material, aiTextureType_DIFFUSE, "diffuseTexture" );
             textures.insert( textures.end( ), diffuseMaps.begin( ), diffuseMaps.end( ) );
             
             // 2. Specular maps
@@ -206,30 +207,43 @@ private:
     }
 };
 
-GLint TextureFromFile( const char *path, string directory )
+GLint TextureFromFile(const char* path, string directory)
 {
-    //Generate texture ID and load texture data
-    string filename = string( path );
+    //Generiere Textur-ID und lade Texturdaten
+    string filename = string(path);
     filename = directory + '/' + filename;
     GLuint textureID;
-    glGenTextures( 1, &textureID );
-    
-    int width, height;
-    
-    unsigned char *image = SOIL_load_image( filename.c_str( ), &width, &height, 0, SOIL_LOAD_RGB );
-    
-    // Assign texture to ID
-    glBindTexture( GL_TEXTURE_2D, textureID );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image );
-    glGenerateMipmap( GL_TEXTURE_2D );
-    
-    // Parameters
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture( GL_TEXTURE_2D, 0 );
-    SOIL_free_image_data( image );
-    
+    glGenTextures(1, &textureID);
+
+    int width, height, nrChannels;
+    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
+    if (!data)
+    {
+        std::cerr << "Failed to load texture: " << filename << std::endl;
+        return -1;
+    }
+
+    GLenum format;
+    if (nrChannels == 1)
+        format = GL_RED;
+    else if (nrChannels == 3)
+        format = GL_RGB;
+    else if (nrChannels == 4)
+        format = GL_RGBA;
+
+    // Textur an ID zuweisen
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    // Parameter setzen
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    stbi_image_free(data);
+
     return textureID;
 }

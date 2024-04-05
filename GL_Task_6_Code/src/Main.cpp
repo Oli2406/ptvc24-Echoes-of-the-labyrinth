@@ -15,7 +15,6 @@
 #include "Material.h"
 #include "Light.h"
 #include "Texture.h"
-#include "SOIL2/SOIL2.h"
 #include "Model.h"
 
 
@@ -203,6 +202,10 @@ int main(int argc, char** argv) {
         std::shared_ptr<Material> woodTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.1f), 2.0f, woodTexture);
         std::shared_ptr<Material> tileTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, tileTexture);
 
+        // Create Model
+
+        Model map("assets/geometry/maze.obj");
+
         // Create geometry
         std::vector<glm::vec3> controlPoints = {
             glm::vec3(-0.3f, 0.6f, 0.0f),
@@ -251,6 +254,11 @@ int main(int argc, char** argv) {
             // Clear backbuffer
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            textureShader->use();
+
+            glm::mat4 viewProjctionMat = camera.getViewProjectionMatrix();
+            glUniformMatrix4fv(glGetUniformLocation(textureShader->getHandle(), "viewProjMatrix"), 1, GL_FALSE, glm::value_ptr(viewProjctionMat));
+
             // Poll events
             glfwPollEvents();
 
@@ -263,11 +271,18 @@ int main(int argc, char** argv) {
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
 
             // Render
-            cornellBox.draw();
+            /*cornellBox.draw();
             cube.draw();
             cylinder.draw();
             sphere.draw();
-            cylinderBezier.draw();
+            cylinderBezier.draw();*/
+
+            // Draw the loaded model
+            glm::mat4 model;
+            model = glm::translate( model, glm::vec3( 0.0f, -1.75f, 0.0f ) ); // Translate it down a bit so it's at the center of the scene
+            model = glm::scale( model, glm::vec3( 0.2f, 0.2f, 0.2f ) );	// It's a bit too big for our scene, so scale it down
+            glUniformMatrix4fv( glGetUniformLocation(textureShader->getHandle(), "modelMatrix" ), 1, GL_FALSE, glm::value_ptr(model) );
+            map.Draw(textureShader);
 
             // Compute frame time
             dt = t;
