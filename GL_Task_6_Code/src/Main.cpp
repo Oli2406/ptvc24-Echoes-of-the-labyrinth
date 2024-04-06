@@ -192,6 +192,7 @@ int main(int argc, char** argv) {
         // Load shader(s)
         std::shared_ptr<Shader> cornellShader = std::make_shared<Shader>("assets/shaders/cornellGouraud.vert", "assets/shaders/cornellGouraud.frag");
         std::shared_ptr<Shader> textureShader = std::make_shared<Shader>("assets/shaders/texture.vert", "assets/shaders/texture.frag");
+        std::shared_ptr<Shader> modelShader = std::make_shared<Shader>("assets/shaders/model.vert", "assets/shaders/model.frag");
 
         // Create textures
         std::shared_ptr<Texture> woodTexture = std::make_shared<Texture>("assets/textures/wood_texture.dds");
@@ -254,8 +255,6 @@ int main(int argc, char** argv) {
             // Clear backbuffer
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            textureShader->use();
-
             glm::mat4 viewProjctionMat = camera.getViewProjectionMatrix();
             glUniformMatrix4fv(glGetUniformLocation(textureShader->getHandle(), "viewProjMatrix"), 1, GL_FALSE, glm::value_ptr(viewProjctionMat));
 
@@ -274,15 +273,17 @@ int main(int argc, char** argv) {
             /*cornellBox.draw();
             cube.draw();
             cylinder.draw();
-            sphere.draw();*/
-            cylinderBezier.draw();
+            sphere.draw();
+            cylinderBezier.draw();*/
 
             // Draw the loaded model
-            /*glm::mat4 model;
+             modelShader->use();
+            glm::mat4 model;
             model = glm::translate( model, glm::vec3( 0.0f, -1.75f, 0.0f ) ); // Translate it down a bit so it's at the center of the scene
             model = glm::scale( model, glm::vec3( 0.2f, 0.2f, 0.2f ) );	// It's a bit too big for our scene, so scale it down
-            glUniformMatrix4fv( glGetUniformLocation(textureShader->getHandle(), "modelMatrix" ), 1, GL_FALSE, glm::value_ptr(model) );
-            map.Draw(textureShader);*/
+            glUniformMatrix4fv( glGetUniformLocation(modelShader->getHandle(), "model" ), 1, GL_FALSE, glm::value_ptr(model) );
+            map.Draw(modelShader);
+            modelShader->unuse();
 
             // Compute frame time
             dt = t;
