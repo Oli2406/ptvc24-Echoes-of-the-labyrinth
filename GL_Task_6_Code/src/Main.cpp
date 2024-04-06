@@ -204,7 +204,7 @@ int main(int argc, char** argv) {
 
         // Create Model
 
-        Model map("assets/geometry/maze.obj");
+        Model map("assets/geometry/diamond.obj");
 
         // Create geometry
         std::vector<glm::vec3> controlPoints = {

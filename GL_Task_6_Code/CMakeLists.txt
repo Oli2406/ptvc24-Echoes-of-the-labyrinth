@@ -34,6 +34,7 @@ set(LINK_LIBRARIES
     debug glfw3d optimized glfw3
     debug glew32sd optimized glew32s
     debug GCG_GL_Lib_Debug optimized GCG_GL_Lib_Release
+    debug assimp-vc143-mtd
     OpenGL::GL
 )
 

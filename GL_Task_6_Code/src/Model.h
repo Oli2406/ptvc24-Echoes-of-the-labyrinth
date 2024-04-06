@@ -10,9 +10,6 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 #include "Mesh.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
@@ -24,7 +21,7 @@ GLint TextureFromFile( const char *path, string directory );
 class Model
 {
 public:
-    /*  Functions   */
+    
     // Constructor, expects a filepath to a 3D model.
     Model( GLchar *path )
     {
@@ -41,18 +38,18 @@ public:
     }
     
 private:
-    /*  Model Data  */
+    
     vector<Mesh> meshes;
     string directory;
     vector<Text> textures_loaded;	// Stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
     
-    /*  Functions   */
+    
     // Loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel( string path )
     {
         // Read file via ASSIMP
         Assimp::Importer importer;
-        const aiScene *scene = importer.ReadFile( path, aiProcess_Triangulate | aiProcess_FlipUVs );
+        const aiScene *scene = importer.ReadFile( path.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
         
         // Check for errors
         if( !scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) // if is Not Zero
