@@ -67,7 +67,7 @@ public:
             string number;
             string name = this->textures[i].type;
             
-            if( name == "diffuseTexture" )
+            if( name == "texture_diffuse" )
             {
                 ss << diffuseNr++; // Transfer GLuint to stream
             }
@@ -84,7 +84,7 @@ public:
         }
         
         // Also set each mesh's shininess property to a default value (if you want you could extend this to another mesh property and possibly change this value)
-        glUniform1f( glGetUniformLocation( shader->getHandle(), "specularAlpha" ), 16.0f );
+        glUniform1f( glGetUniformLocation( shader->getHandle(), "material.shininess" ), 16.0f );
         
         // Draw mesh
         glBindVertexArray( this->VAO );

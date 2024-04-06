@@ -150,7 +150,7 @@ private:
             // Normal: texture_normalN
             
             // 1. Diffuse maps
-            vector<Text> diffuseMaps = this->loadMaterialTextures( material, aiTextureType_DIFFUSE, "diffuseTexture" );
+            vector<Text> diffuseMaps = this->loadMaterialTextures( material, aiTextureType_DIFFUSE, "texture_diffuse" );
             textures.insert( textures.end( ), diffuseMaps.begin( ), diffuseMaps.end( ) );
             
             // 2. Specular maps
