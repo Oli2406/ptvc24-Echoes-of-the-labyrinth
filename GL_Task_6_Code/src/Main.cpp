@@ -243,7 +243,6 @@ int main(int argc, char** argv) {
 
         // Initialize lights
         DirectionalLight dirL(glm::vec3(0.8f), glm::vec3(0.0f, -1.0f, -1.0f));
-        PointLight pointL(glm::vec3(1.0f), glm::vec3(0.0f), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -251,12 +250,16 @@ int main(int argc, char** argv) {
         float t_sum = 0.0f;
         double mouse_x, mouse_y;
 
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        GLint modelLoc = glGetUniformLocation(modelShader->getHandle(), "model");
+
+
         while (!glfwWindowShouldClose(window)) {
             // Clear backbuffer
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            glm::mat4 viewProjctionMat = camera.getViewProjectionMatrix();
-            glUniformMatrix4fv(glGetUniformLocation(textureShader->getHandle(), "viewProjMatrix"), 1, GL_FALSE, glm::value_ptr(viewProjctionMat));
+            modelShader->use();
 
             // Poll events
             glfwPollEvents();
@@ -265,9 +268,12 @@ int main(int argc, char** argv) {
             glfwGetCursorPos(window, &mouse_x, &mouse_y);
             camera.update(int(mouse_x), int(mouse_y), _zoom, _dragging, _strafing);
 
+            modelShader->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
             // Set per-frame uniforms
-            setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
-            setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
+            //setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
+            //setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
 
             // Render
             /*cornellBox.draw();
@@ -275,15 +281,8 @@ int main(int argc, char** argv) {
             cylinder.draw();
             sphere.draw();
             cylinderBezier.draw();*/
-
-            // Draw the loaded model
-             modelShader->use();
-            glm::mat4 model;
-            model = glm::translate( model, glm::vec3( 0.0f, -1.75f, 0.0f ) ); // Translate it down a bit so it's at the center of the scene
-            model = glm::scale( model, glm::vec3( 0.2f, 0.2f, 0.2f ) );	// It's a bit too big for our scene, so scale it down
-            glUniformMatrix4fv( glGetUniformLocation(modelShader->getHandle(), "model" ), 1, GL_FALSE, glm::value_ptr(model) );
+            
             map.Draw(modelShader);
-            modelShader->unuse();
 
             // Compute frame time
             dt = t;
