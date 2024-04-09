@@ -14,6 +14,7 @@
 #include "Texture.h"
 #include "Model.h"
 #include <filesystem>
+#include "Skybox.h"
 
 
 #undef min
@@ -50,7 +51,7 @@ static bool _draw_texcoords = false;
 
 static bool _dragging = false;
 static bool _strafing = false;
-static float _zoom = 5.0f;
+static float _zoom = 20.0f;
 
 /* --------------------------------------------- */
 // Main
@@ -191,10 +192,12 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> cornellShader = std::make_shared<Shader>("assets/shaders/cornellGouraud.vert", "assets/shaders/cornellGouraud.frag");
         std::shared_ptr<Shader> textureShader = std::make_shared<Shader>("assets/shaders/texture.vert", "assets/shaders/texture.frag");
         std::shared_ptr<Shader> modelShader = std::make_shared<Shader>("assets/shaders/model.vert", "assets/shaders/model.frag");
+        std::shared_ptr<Shader> sky = std::make_shared<Shader>("assets/shaders/sky.vert", "assets/shaders/sky.frag");
 
-        string path = gcgFindTextureFile("assets/geometry/maze.obj");
+        string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
         Model map(&path[0]);
-
+        Skybox skybox;
+        
         // Create geometry
         std::vector<glm::vec3> controlPoints = {
             glm::vec3(-0.3f, 0.6f, 0.0f),
@@ -248,8 +251,11 @@ int main(int argc, char** argv) {
             //setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
             //setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
 
-            
             map.Draw(modelShader);
+
+            sky->use();
+            sky->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
+            skybox.draw();
 
             // Compute frame time
             dt = t;
