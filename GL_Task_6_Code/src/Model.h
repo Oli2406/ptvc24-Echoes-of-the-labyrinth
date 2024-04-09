@@ -10,7 +10,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Mesh.h"
+#include "mesh.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
@@ -211,7 +211,8 @@ GLint TextureFromFile(const char* path, string directory)
     GLuint textureID;
     glGenTextures(1, &textureID);
 
-    int width, height, nrChannels;
+    int width, height;
+    int nrChannels = 3;
     unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
     if (!data)
     {
@@ -219,17 +220,9 @@ GLint TextureFromFile(const char* path, string directory)
         return -1;
     }
 
-    GLenum format;
-    if (nrChannels == 1)
-        format = GL_RED;
-    else if (nrChannels == 3)
-        format = GL_RGB;
-    else if (nrChannels == 4)
-        format = GL_RGBA;
-
     // Textur an ID zuweisen
     glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // Parameter setzen

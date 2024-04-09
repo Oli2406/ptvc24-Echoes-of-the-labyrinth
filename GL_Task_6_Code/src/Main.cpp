@@ -3,9 +3,6 @@
  * Institute of Computer Graphics and Algorithms.
  * This file is part of the GCG Lab Framework and must not be redistributed.
  */
-// Badie:Hallo
-// TestTestTest
-// es funktioniert beim anderen nicht :(
 
 #include "Utils.h"
 #include <sstream>
@@ -16,6 +13,7 @@
 #include "Light.h"
 #include "Texture.h"
 #include "Model.h"
+#include <filesystem>
 
 
 #undef min
@@ -70,11 +68,11 @@ int main(int argc, char** argv) {
 
     INIReader window_reader("assets/settings/window.ini");
 
-    int window_width = window_reader.GetInteger("window", "width", 800);
-    int window_height = window_reader.GetInteger("window", "height", 800);
+    int window_width = 1920;
+    int window_height = 1080;
     int refresh_rate = window_reader.GetInteger("window", "refresh_rate", 60);
     bool fullscreen = window_reader.GetBoolean("window", "fullscreen", false);
-    std::string window_title = window_reader.Get("window", "title", "GCG 2023");
+    std::string window_title = "Echoes of the Labyrinth";
     std::string init_camera_filepath = "assets/settings/camera_front.ini";
     if (cmdline_args.init_camera) {
         init_camera_filepath = cmdline_args.init_camera_filepath;
@@ -205,7 +203,7 @@ int main(int argc, char** argv) {
 
         // Create Model
 
-        Model map("assets/geometry/diamond.obj");
+        Model map("C:/Users/Startklar/Documents/Badie/ptvc24-Echoes-of-the-labyrinth/GL_Task_6_Code/assets/geometry/maze/maze.obj");
 
         // Create geometry
         std::vector<glm::vec3> controlPoints = {
@@ -251,7 +249,7 @@ int main(int argc, char** argv) {
         double mouse_x, mouse_y;
 
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+        //model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
         model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
         GLint modelLoc = glGetUniformLocation(modelShader->getHandle(), "model");
 
