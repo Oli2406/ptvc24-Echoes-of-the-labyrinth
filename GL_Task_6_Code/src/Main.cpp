@@ -3,9 +3,6 @@
  * Institute of Computer Graphics and Algorithms.
  * This file is part of the GCG Lab Framework and must not be redistributed.
  */
-// Badie:Hallo
-// TestTestTest
-// es funktioniert beim anderen nicht :(
 
 #include "Utils.h"
 #include <sstream>
@@ -16,6 +13,7 @@
 #include "Light.h"
 #include "Texture.h"
 #include "Model.h"
+#include <filesystem>
 
 
 #undef min
@@ -70,11 +68,11 @@ int main(int argc, char** argv) {
 
     INIReader window_reader("assets/settings/window.ini");
 
-    int window_width = window_reader.GetInteger("window", "width", 800);
-    int window_height = window_reader.GetInteger("window", "height", 800);
+    int window_width = 1920;
+    int window_height = 1080;
     int refresh_rate = window_reader.GetInteger("window", "refresh_rate", 60);
     bool fullscreen = window_reader.GetBoolean("window", "fullscreen", false);
-    std::string window_title = window_reader.Get("window", "title", "GCG 2023");
+    std::string window_title = "Echoes of the Labyrinth";
     std::string init_camera_filepath = "assets/settings/camera_front.ini";
     if (cmdline_args.init_camera) {
         init_camera_filepath = cmdline_args.init_camera_filepath;
@@ -194,18 +192,8 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> textureShader = std::make_shared<Shader>("assets/shaders/texture.vert", "assets/shaders/texture.frag");
         std::shared_ptr<Shader> modelShader = std::make_shared<Shader>("assets/shaders/model.vert", "assets/shaders/model.frag");
 
-        // Create textures
-        std::shared_ptr<Texture> woodTexture = std::make_shared<Texture>("assets/textures/wood_texture.dds");
-        std::shared_ptr<Texture> tileTexture = std::make_shared<Texture>("assets/textures/tiles_diffuse.dds");
-
-        // Create materials
-        std::shared_ptr<Material> cornellMaterial = std::make_shared<Material>(cornellShader, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.1f, 0.9f, 0.3f), 10.0f);
-        std::shared_ptr<Material> woodTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.1f), 2.0f, woodTexture);
-        std::shared_ptr<Material> tileTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, tileTexture);
-
-        // Create Model
-
-        Model map("assets/geometry/diamond.obj");
+        string path = gcgFindTextureFile("assets/geometry/maze.obj");
+        Model map(&path[0]);
 
         // Create geometry
         std::vector<glm::vec3> controlPoints = {
@@ -216,25 +204,7 @@ int main(int argc, char** argv) {
             glm::vec3(0.0f, -0.5f, 0.0f),
         };
         int numSegments = 42;
-        Geometry cornellBox = Geometry(glm::mat4(1), Geometry::createCornellBoxGeometry(3, 3, 3), cornellMaterial);
-        Geometry cube = Geometry(
-            glm::rotate(glm::translate(glm::mat4(1), glm::vec3(-0.5f, -0.8f, 0)), glm::radians(45.0f), glm::vec3(0, 1, 0)),
-            Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
-            woodTextureMaterial
-        );
-        Geometry sphere = Geometry(
-            glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -0.8f, 0.0f)), Geometry::createSphereGeometry(18, 8, 0.24f), tileTextureMaterial
-        );
-        Geometry cylinderBezier = Geometry(
-            glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 0.0f)),
-            Geometry::createBezierCylinderGeometry(18, controlPoints, numSegments, 0.2f),
-            tileTextureMaterial
-        );
-        Geometry cylinder = Geometry(
-            glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, 0.3f, 0.0f)),
-            Geometry::createCylinderGeometry(18, 1.5f, 0.2f),
-            woodTextureMaterial
-        );
+        
 
         // Initialize camera
         Camera camera(fov, float(window_width) / float(window_height), nearZ, farZ);
@@ -252,12 +222,14 @@ int main(int argc, char** argv) {
 
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+        model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
         GLint modelLoc = glGetUniformLocation(modelShader->getHandle(), "model");
+        float rotAngle = 0.3f;
 
 
         while (!glfwWindowShouldClose(window)) {
             // Clear backbuffer
+            
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             modelShader->use();
 
@@ -270,17 +242,12 @@ int main(int argc, char** argv) {
 
             modelShader->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
 
             // Set per-frame uniforms
             //setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
             //setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
 
-            // Render
-            /*cornellBox.draw();
-            cube.draw();
-            cylinder.draw();
-            sphere.draw();
-            cylinderBezier.draw();*/
             
             map.Draw(modelShader);
 
