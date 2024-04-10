@@ -49,9 +49,9 @@ static bool _culling = false;
 static bool _draw_normals = false;
 static bool _draw_texcoords = false;
 
-static bool _dragging = false;
+static bool _dragging = true;
 static bool _strafing = false;
-static float _zoom = 20.0f;
+static float _zoom = 10.0f;
 
 /* --------------------------------------------- */
 // Main
@@ -246,6 +246,7 @@ int main(int argc, char** argv) {
             modelShader->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+            
 
             // Set per-frame uniforms
             //setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
@@ -309,14 +310,13 @@ void setPerFrameUniforms(Shader* shader, Camera& camera, DirectionalLight& dirL,
 
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        _dragging = true;
-    } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+    _dragging = true;
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
         _dragging = false;
-    } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
         _strafing = true;
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
         _strafing = false;
+        _dragging = true;
     }
 }
 
