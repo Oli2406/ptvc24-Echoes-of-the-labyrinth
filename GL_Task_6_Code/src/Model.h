@@ -44,7 +44,8 @@ private:
     string directory;
     vector<Text> textures_loaded;	// Stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
     
-    
+public:
+
     // Loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel( string path )
     {
@@ -64,6 +65,8 @@ private:
         // Process ASSIMP's root node recursively
         this->processNode( scene->mRootNode, scene );
     }
+
+private:
     
     // Processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
     void processNode( aiNode* node, const aiScene* scene )

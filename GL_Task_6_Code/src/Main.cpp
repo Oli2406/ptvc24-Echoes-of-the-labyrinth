@@ -197,16 +197,15 @@ int main(int argc, char** argv) {
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
         Model map(&path[0]);
         Skybox skybox;
-        
-        // Create geometry
-        std::vector<glm::vec3> controlPoints = {
-            glm::vec3(-0.3f, 0.6f, 0.0f),
-            glm::vec3(0.0f, 1.6f, 0.0f),
-            glm::vec3(1.4f, 0.3f, 0.0f),
-            glm::vec3(0.0f, 0.3f, 0.0f),
-            glm::vec3(0.0f, -0.5f, 0.0f),
-        };
-        int numSegments = 42;
+
+        string path1 = gcgFindTextureFile("assets/geometry/podest/podest.obj");
+        Model podest(&path1[0]);
+
+        string path2 = gcgFindTextureFile("assets/geometry/floor/floor.obj");
+        Model floor(&path2[0]);
+
+        string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
+        Model diamond(&path3[0]);
         
 
         // Initialize camera
@@ -253,6 +252,9 @@ int main(int argc, char** argv) {
             //setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
 
             map.Draw(modelShader);
+            podest.Draw(modelShader);
+            floor.Draw(modelShader);
+            diamond.Draw(modelShader);
 
             sky->use();
             sky->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
