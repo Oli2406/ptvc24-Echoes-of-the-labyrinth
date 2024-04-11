@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
 
             modelShader->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-            model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+            //model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
             
 
             // Set per-frame uniforms

@@ -1,13 +1,13 @@
 # Blender 4.1.0 MTL File: 'maze.blend'
 # www.blender.org
 
-newmtl Old_Mossy_Tiles
-Ns 250.000000
+newmtl Carved_cave_stone_wall
 Ka 1.000000 1.000000 1.000000
-Ks 0.500000 0.500000 0.500000
+Ks 0.113636 0.113636 0.113636
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd maze.jpg
-map_Bump -bm 1.000000 maze_normals.jpg
+map_Kd maze.png
+map_Ns C:/Carved_cave_stone_wall_Roughness.png
+map_refl C:/Carved_cave_stone_wall_Metallic.png
