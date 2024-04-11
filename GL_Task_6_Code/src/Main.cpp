@@ -51,7 +51,7 @@ static bool _draw_texcoords = false;
 
 static bool _dragging = true;
 static bool _strafing = false;
-static float _zoom = 10.0f;
+static float _zoom = 5.0f;
 
 /* --------------------------------------------- */
 // Main
