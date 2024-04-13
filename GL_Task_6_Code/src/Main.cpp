@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0]);
 
-        player1.set(diamond, glm::vec3(0, 0, 0), 0, 0, 0, 1);
+        player1.set(floor, glm::vec3(0, 0, 0), 0, 0, 0, 1);
 
         // Initialize camera
         Camera camera(fov, float(window_width) / float(window_height), nearZ, farZ);
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
 
         glm::mat4 play = glm::mat4(1.0f);
         play = glm::translate(play, player1.getPosition());
-        play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
+        //play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
         //play = glm::rotate(play, glm::vec3(player1.getRotX(), player1.getRotY(), player1.getRotZ));
 
 
@@ -257,7 +257,7 @@ int main(int argc, char** argv) {
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
 
 
-            player1.move(dt);
+            player1.checkInputs(window);
 
 
             play = glm::translate(play, player1.getPosition());
@@ -343,25 +343,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) { _zoom -= float(yoffset) * 0.5f; }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-
-    if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-        player1.check("W");
-    }
-    else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-        player1.check("S");
-    }
-    else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-        player1.check("A");
-    }
-    else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-        player1.check("D");
-    } else if(key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-        player1.check("SPACE");
-    } else if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-}
-
-/*void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     // F1 - Wireframe
     // F2 - Culling
     // Esc - Exit
@@ -388,23 +369,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case GLFW_KEY_T:
             _draw_texcoords = !_draw_texcoords;
             break;
-        case GLFW_KEY_W:
-            player1.check("W");
-            break;
-        case GLFW_KEY_S:
-            player1.check("S");
-            break;
-        case GLFW_KEY_A:
-            player1.check("A");
-            break;
-        case GLFW_KEY_D:
-            player1.check("D");
-            break;
-        case GLFW_KEY_SPACE:
-            player1.check("SPACE");
-            break;
     }
-}*/
+}
 
 static void APIENTRY DebugCallbackDefault(
     GLenum source,

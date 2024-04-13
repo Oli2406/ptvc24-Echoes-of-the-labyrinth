@@ -25,13 +25,13 @@ private:
 	glm::vec3 position;
 	float rotX, rotY, rotZ;
 	float scale;
-	const float RUN_SPEED = 10;
-	const float TURN_SPEED = 180;
+	const float RUN_SPEED = 20.0f;
+	const float TURN_SPEED = 160.0f;
 	float speed = 0;
 	float turnSpeed = 0;
 	const double PI = 3.14159265358979323846; // Manuelle Definition von PI
-	const float GRAVITY = -50;
-	const float JUMP_POWER = 10;
+	const float GRAVITY = -50.0f;
+	const float JUMP_POWER = 30.0f;
 	float upwardSpeed = 0;
 	const float TERRAIN_HEIGHT = 0;
 	boolean isInAir = false;
@@ -107,7 +107,7 @@ public:
 	}
    
 	void move(float delta) {
-		checkInputs();
+		//checkInputs();
 		this->increaseRotation(0, turnSpeed * delta, 0);
 		float distance = speed * delta;
 		float dx = (float)(distance * sin(rotY * PI / 180.0));
@@ -121,33 +121,26 @@ public:
 			isInAir = false;
 		}
 	}
-	void check(std::string input) {
-		this->input = input;
-	}
 
-	void checkInputs() {
-		if (input == "W") {
-			this->speed = RUN_SPEED;
+	void checkInputs(GLFWwindow* window) {
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+			position.x -= 0.0001f;
 		}
-		else if (input == "S") {
-			this->speed = -RUN_SPEED;
+		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+			position.x += 0.0001f;
 		}
 		else {
-			speed = 0;
+			position.x = 0;
 		}
 
-		if (input == "D") {
-			this->turnSpeed = -TURN_SPEED;
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+			position.z -= 0.0001f;
 		}
-		else if (input == "A") {
-			this->turnSpeed = TURN_SPEED;
+		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+			position.z += 0.0001f;
 		}
 		else {
-			turnSpeed = 0;
-		}
-
-		if (input == "SPACE") {
-			jump();
+			position.z = 0;
 		}
 	}
 };
