@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "Shader.h"
-#include "mesh.h"
+#include "Mesh.h"
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -27,6 +27,10 @@ public:
     Model( GLchar *path )
     {
         this->loadModel( path );
+    }
+
+    Model() {
+
     }
     
     // Draws the model, and thus all its meshes
