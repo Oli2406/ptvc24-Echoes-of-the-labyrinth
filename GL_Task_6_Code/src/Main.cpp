@@ -257,7 +257,9 @@ int main(int argc, char** argv) {
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
 
 
-            player1.checkInputs(window);
+            player1.checkInputs(window, dt);
+            player1.jump(dt);
+            //player1.move(dt);
 
 
             play = glm::translate(play, player1.getPosition());
@@ -280,8 +282,8 @@ int main(int argc, char** argv) {
 
             // Compute frame time
             dt = t;
-            t = float(glfwGetTime()/10);
-            dt = (t - dt)/1000;
+            t = float(glfwGetTime());
+            dt = (t - dt);
             t_sum += dt;
 
             // Swap buffers

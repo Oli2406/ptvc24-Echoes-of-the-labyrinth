@@ -36,6 +36,7 @@ private:
 	const float TERRAIN_HEIGHT = 0;
 	boolean isInAir = false;
 	std::string input;
+	boolean jumping = false;
 
 public:
 	Player(){}
@@ -99,30 +100,37 @@ public:
 		rotZ += dz;
 	}
 
-	void jump() {
-		if (!isInAir) {
+	void jump(float delta) {
+		if (!isInAir && jumping) {
 			upwardSpeed = JUMP_POWER;
 			isInAir = true;
+		}
+		if (isInAir) {
+			position.y = upwardSpeed * delta;
+			upwardSpeed += GRAVITY * delta;
+			std::cout << position.y << std::endl;
+
+			if (position.y < TERRAIN_HEIGHT && upwardSpeed < -JUMP_POWER) {
+				upwardSpeed = 0;
+				position.y = TERRAIN_HEIGHT;
+				isInAir = false;
+			}
 		}
 	}
    
 	void move(float delta) {
-		//checkInputs();
-		this->increaseRotation(0, turnSpeed * delta, 0);
-		float distance = speed * delta;
-		float dx = (float)(distance * sin(rotY * PI / 180.0));
-		float dz = (float)(distance * cos(rotY * PI / 180.0));
-		this->increasePosition(dx, 0, dz);
-		upwardSpeed += GRAVITY * delta;
-		this->increasePosition(0, upwardSpeed * delta, 0);
-		if (position.y < TERRAIN_HEIGHT) {
+		if (isInAir) {
+			position.y = upwardSpeed;
+			upwardSpeed -= GRAVITY ;
+		}
+		if (position.y <= TERRAIN_HEIGHT) {
 			upwardSpeed = 0;
 			position.y = TERRAIN_HEIGHT;
 			isInAir = false;
 		}
 	}
 
-	void checkInputs(GLFWwindow* window) {
+	void checkInputs(GLFWwindow* window, float delta) {
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 			position.x -= 0.0001f;
 		}
@@ -134,13 +142,19 @@ public:
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position.z -= 0.0001f;
+			position.z += 0.0001f;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position.z += 0.0001f;
+			position.z -= 0.0001f;
 		}
 		else {
 			position.z = 0;
+		}
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+			jumping = true;
+		}
+		else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
+			jumping = false;
 		}
 	}
 };
