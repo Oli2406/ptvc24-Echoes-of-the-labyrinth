@@ -106,8 +106,8 @@ public:
 			isInAir = true;
 		}
 		if (isInAir) {
-			position.y = upwardSpeed * delta;
 			upwardSpeed += GRAVITY * delta;
+			position.y = upwardSpeed * delta;
 			std::cout << position.y << std::endl;
 
 			if (position.y < TERRAIN_HEIGHT && upwardSpeed <= -JUMP_POWER) {
