@@ -110,42 +110,30 @@ public:
 			upwardSpeed += GRAVITY * delta;
 			std::cout << position.y << std::endl;
 
-			if (position.y < TERRAIN_HEIGHT && upwardSpeed < -JUMP_POWER) {
+			if (position.y < TERRAIN_HEIGHT && upwardSpeed <= -JUMP_POWER) {
 				upwardSpeed = 0;
 				position.y = TERRAIN_HEIGHT;
 				isInAir = false;
 			}
 		}
 	}
-   
-	void move(float delta) {
-		if (isInAir) {
-			position.y = upwardSpeed;
-			upwardSpeed -= GRAVITY ;
-		}
-		if (position.y <= TERRAIN_HEIGHT) {
-			upwardSpeed = 0;
-			position.y = TERRAIN_HEIGHT;
-			isInAir = false;
-		}
-	}
 
 	void checkInputs(GLFWwindow* window, float delta) {
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			position.x -= 0.0001f;
+			position.x -= 0.01f * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position.x += 0.0001f;
+			position.x += 0.01f * delta;
 		}
 		else {
 			position.x = 0;
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position.z += 0.0001f;
+			position.z += 0.01f * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position.z -= 0.0001f;
+			position.z -= 0.01f * delta;
 		}
 		else {
 			position.z = 0;
