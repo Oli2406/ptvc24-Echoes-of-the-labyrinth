@@ -23,6 +23,7 @@ class Player
 private:
 	Model model;
 	glm::vec3 position;
+	glm::vec3 pos = glm::vec3(0, 0, 0);
 	float rotX, rotY, rotZ;
 	float scale;
 	const float RUN_SPEED = 20.0f;
@@ -30,8 +31,8 @@ private:
 	float speed = 0;
 	float turnSpeed = 0;
 	const double PI = 3.14159265358979323846; // Manuelle Definition von PI
-	const float GRAVITY = -100.0f;
-	const float JUMP_POWER = 5.0f;
+	const float GRAVITY = -50.0f;
+	const float JUMP_POWER = 30.0f;
 	float upwardSpeed = 0;
 	const float TERRAIN_HEIGHT = 0;
 	boolean isInAir = false;
@@ -68,7 +69,9 @@ public:
 	}
 
 	glm::vec3 getPosition() {
-		return position;
+		glm::vec3 now = position - pos;
+		pos = position;
+		return now;
 	}
 
 	Model getModel() {
@@ -101,17 +104,16 @@ public:
 	}
 
 	void jump(float delta) {
-		if (!isInAir && jumping && position.y <= 0.0f) {
+		if (!isInAir && jumping) {
 			upwardSpeed = JUMP_POWER;
 			isInAir = true;
 		}
 		if (isInAir) {
 			position.y += upwardSpeed * delta;
 			upwardSpeed += GRAVITY * delta;
-			std::cout << position.y << std::endl;
 
-			if (position.y <= 0.0f) {
-				position.y = 0.0f;
+			if (position.y <= TERRAIN_HEIGHT) {
+				position.y = TERRAIN_HEIGHT;
 				upwardSpeed = 0.0f;
 				isInAir = false;
 			}
