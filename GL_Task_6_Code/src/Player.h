@@ -30,8 +30,8 @@ private:
 	float speed = 0;
 	float turnSpeed = 0;
 	const double PI = 3.14159265358979323846; // Manuelle Definition von PI
-	const float GRAVITY = -50.0f;
-	const float JUMP_POWER = 30.0f;
+	const float GRAVITY = -100.0f;
+	const float JUMP_POWER = 5.0f;
 	float upwardSpeed = 0;
 	const float TERRAIN_HEIGHT = 0;
 	boolean isInAir = false;
@@ -101,35 +101,22 @@ public:
 	}
 
 	void jump(float delta) {
-<<<<<<< HEAD
-    if (!isInAir && jumping) {
-		isInAir = true;
-        upwardSpeed = 5.0f;
-    }
-    
-    if (isInAir) {
-        position.y += upwardSpeed * delta; // Hier sollte 'position.y' erhöht werden
-        upwardSpeed += GRAVITY * delta;
-		std::cout << position.y << std::endl;
-    }
-=======
-		if (!isInAir && jumping) {
+		if (!isInAir && jumping && position.y <= 0.0f) {
 			upwardSpeed = JUMP_POWER;
 			isInAir = true;
 		}
 		if (isInAir) {
+			position.y += upwardSpeed * delta;
 			upwardSpeed += GRAVITY * delta;
-			position.y = upwardSpeed * delta;
 			std::cout << position.y << std::endl;
->>>>>>> 15c17df1f103bb011eb128dd740c9201d437c852
 
-	if (position.y <= 0.0f && upwardSpeed <= -5.0f) {
-		std::cout << upwardSpeed << std::endl;
-		position.y = 0.0f;
-		upwardSpeed = 0.0f;
-		isInAir = false;
+			if (position.y <= 0.0f) {
+				position.y = 0.0f;
+				upwardSpeed = 0.0f;
+				isInAir = false;
+			}
+		}
 	}
-}
 
 	void checkInputs(GLFWwindow* window, float delta) {
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
@@ -152,7 +139,11 @@ public:
 			position.z = 0;
 		}
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-			jumping = true;
+			if (!jumping) {
+				jumping = true;
+				upwardSpeed = 0.2f;
+				position.y = 0.0f;
+			}
 		}
 		else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
 			jumping = false;
