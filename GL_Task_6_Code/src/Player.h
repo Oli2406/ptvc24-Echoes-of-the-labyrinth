@@ -101,39 +101,41 @@ public:
 	}
 
 	void jump(float delta) {
-		if (!isInAir && jumping) {
-			upwardSpeed = JUMP_POWER;
-			isInAir = true;
-		}
-		if (isInAir) {
-			position.y = upwardSpeed * delta;
-			upwardSpeed += GRAVITY * delta;
-			std::cout << position.y << std::endl;
+    if (!isInAir && jumping) {
+		isInAir = true;
+        upwardSpeed = 5.0f;
+    }
+    
+    if (isInAir) {
+        position.y += upwardSpeed * delta; // Hier sollte 'position.y' erhöht werden
+        upwardSpeed += GRAVITY * delta;
+		std::cout << position.y << std::endl;
+    }
 
-			if (position.y < TERRAIN_HEIGHT && upwardSpeed <= -JUMP_POWER) {
-				upwardSpeed = 0;
-				position.y = TERRAIN_HEIGHT;
-				isInAir = false;
-			}
-		}
+	if (position.y <= 0.0f && upwardSpeed <= -5.0f) {
+		std::cout << upwardSpeed << std::endl;
+		position.y = 0.0f;
+		upwardSpeed = 0.0f;
+		isInAir = false;
 	}
+}
 
 	void checkInputs(GLFWwindow* window, float delta) {
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			position.x -= 0.01f * delta;
+			position.x -= 0.1f * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position.x += 0.01f * delta;
+			position.x += 0.1f * delta;
 		}
 		else {
 			position.x = 0;
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position.z += 0.01f * delta;
+			position.z += 0.1f * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position.z -= 0.01f * delta;
+			position.z -= 0.1f * delta;
 		}
 		else {
 			position.z = 0;

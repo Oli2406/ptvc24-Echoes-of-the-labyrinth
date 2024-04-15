@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0]);
 
-        player1.set(floor, glm::vec3(0, 0, 0), 0, 0, 0, 1);
+        player1.set(podest, glm::vec3(0.0f, 0.0f, 0.0f), 0, 0, 0, 1);
 
         // Initialize camera
         Camera camera(fov, float(window_width) / float(window_height), nearZ, farZ);
@@ -227,7 +227,7 @@ int main(int argc, char** argv) {
         double mouse_x, mouse_y;
 
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
         GLint modelLoc = glGetUniformLocation(modelShader->getHandle(), "model");
         float rotAngle = 0.3f;
@@ -271,9 +271,11 @@ int main(int argc, char** argv) {
             //setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
             //setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
 
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
             //map.Draw(modelShader);
             //podest.Draw(modelShader);
-            //floor.Draw(modelShader);
+            floor.Draw(modelShader);
             //diamond.Draw(modelShader);
 
             sky->use();
