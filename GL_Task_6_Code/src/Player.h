@@ -31,8 +31,8 @@ private:
 	float speed = 0;
 	float turnSpeed = 0;
 	const double PI = 3.14159265358979323846; // Manuelle Definition von PI
-	const float GRAVITY = -50.0f;
-	const float JUMP_POWER = 30.0f;
+	const float GRAVITY = -9.81f;
+	const float JUMP_POWER = 5.0f;
 	float upwardSpeed = 0;
 	const float TERRAIN_HEIGHT = 0;
 	boolean isInAir = false;
@@ -122,23 +122,18 @@ public:
 
 	void checkInputs(GLFWwindow* window, float delta) {
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			position.x -= 0.1f * delta;
+			position.x -= 0.35f * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position.x += 0.1f * delta;
-		}
-		else {
-			position.x = 0;
+			position.x += 0.35f * delta;
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position.z += 0.1f * delta;
+			position.z += 0.35f * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position.z -= 0.1f * delta;
-		}
-		else {
-			position.z = 0;
+			position.z -= 0.35f * delta;
+		
 		}
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 			if (!jumping) {
