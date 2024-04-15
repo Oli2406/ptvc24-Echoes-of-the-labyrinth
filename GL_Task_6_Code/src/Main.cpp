@@ -6,7 +6,6 @@
 
 #include "Utils.h"
 #include <sstream>
-#include "Camera.h"
 #include "Shader.h"
 #include "Geometry.h"
 #include "Material.h"
@@ -16,6 +15,7 @@
 #include <filesystem>
 #include "Skybox.h"
 #include "Player.h"
+#include "ArcCamera.h"
 
 
 #undef min
@@ -36,9 +36,9 @@ static void APIENTRY DebugCallbackDefault(
 );
 static std::string FormatDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, const char *msg);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void setPerFrameUniforms(Shader* shader, Camera& camera, DirectionalLight& dirL, PointLight& pointL);
+void mouse_callback(GLFWwindow* window, double xPos, double yPos);
+void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
+void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& dirL, PointLight& pointL);
 
 /* --------------------------------------------- */
 // Global variables
@@ -55,14 +55,15 @@ static bool _strafing = false;
 static float _zoom = 5.0f;
 
 Player player1;
+ArcCamera camera;
+bool firstMouse = true;
 
 /* --------------------------------------------- */
 // Main
 /* --------------------------------------------- */
 
 int main(int argc, char** argv) {
-    std::cout << ":::::: WELCOME TO GCG 2023 ::::::" << std::endl;
-
+    
     CMDLineArgs cmdline_args;
     gcgParseArgs(cmdline_args, argc, argv);
 
@@ -83,16 +84,13 @@ int main(int argc, char** argv) {
     }
     INIReader camera_reader(init_camera_filepath);
 
-    float fov = float(camera_reader.GetReal("camera", "fov", 60.0f));
-    float nearZ = float(camera_reader.GetReal("camera", "near", 0.1f));
-    float farZ = float(camera_reader.GetReal("camera", "far", 100.0f));
-    float camera_yaw = static_cast<float>(camera_reader.GetReal("camera", "yaw", 0.0f));
-    float camera_pitch = static_cast<float>(camera_reader.GetReal("camera", "pitch", 0.0f));
+    float fov = 60.0f;
+    float nearZ = 0.1f;
+    float farZ = 100.0f;
+    float camera_yaw = 0.0f;
+    float camera_pitch = 0.0f;
 
     std::string init_renderer_filepath = "assets/settings/renderer_standard.ini";
-    if (cmdline_args.init_renderer) {
-        init_renderer_filepath = cmdline_args.init_renderer_filepath;
-    }
     INIReader renderer_reader(init_renderer_filepath);
 
     _wireframe = renderer_reader.GetBoolean("renderer", "wireframe", false);
@@ -100,6 +98,9 @@ int main(int argc, char** argv) {
     _draw_normals = renderer_reader.GetBoolean("renderer", "normals", false);
     _draw_texcoords = renderer_reader.GetBoolean("renderer", "texcoords", false);
     bool _depthtest = renderer_reader.GetBoolean("renderer", "depthtest", true);
+
+    glm::mat4 projection = glm::perspective(radians(fov), (float)window_width / (float)window_height, nearZ, farZ);
+    glm::mat4 viewProjectionMatrix = mat4(1.0f);
 
     /* --------------------------------------------- */
     // Create context
@@ -169,7 +170,7 @@ int main(int argc, char** argv) {
 
     // set callbacks
     glfwSetKeyCallback(window, key_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
     // set GL defaults
@@ -213,9 +214,7 @@ int main(int argc, char** argv) {
         player1.set(podest, glm::vec3(0.0f, 0.0f, 0.0f), 0, 0, 0, 1);
 
         // Initialize camera
-        Camera camera(fov, float(window_width) / float(window_height), nearZ, farZ);
-        camera.setYaw(camera_yaw);
-        camera.setPitch(camera_pitch);
+        camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
         DirectionalLight dirL(glm::vec3(0.8f), glm::vec3(0.0f, -1.0f, -1.0f));
@@ -224,7 +223,6 @@ int main(int argc, char** argv) {
         float t = float(glfwGetTime());
         float t_sum = 0.0f;
         float dt = 0.0f;
-        double mouse_x, mouse_y;
 
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -238,20 +236,16 @@ int main(int argc, char** argv) {
         //play = glm::rotate(play, glm::vec3(player1.getRotX(), player1.getRotY(), player1.getRotZ));
 
 
-        while (!glfwWindowShouldClose(window)) {
-            // Clear backbuffer
+        while (!glfwWindowShouldClose(window)) { 
+
+            viewProjectionMatrix = projection * camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw());
             
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             modelShader->use();
 
-            // Poll events
             glfwPollEvents();
 
-            // Update camera
-            glfwGetCursorPos(window, &mouse_x, &mouse_y);
-            camera.update(int(mouse_x), int(mouse_y), _zoom, _dragging, _strafing);
-
-            modelShader->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
+            modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
             //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             //model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
@@ -279,7 +273,7 @@ int main(int argc, char** argv) {
             //diamond.Draw(modelShader);
 
             sky->use();
-            sky->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
+            sky->setUniform("viewProjMatrix", viewProjectionMatrix);
             skybox.draw();
 
             // Compute frame time
@@ -290,15 +284,6 @@ int main(int argc, char** argv) {
 
             // Swap buffers
             glfwSwapBuffers(window);
-
-            if (cmdline_args.run_headless) {
-                std::string screenshot_filename = "screenshot";
-                if (cmdline_args.set_filename) {
-                    screenshot_filename = cmdline_args.filename;
-                }
-                saveScreenshot(screenshot_filename, window_width, window_height);
-                break;
-            }
         }
     }
 
@@ -318,10 +303,10 @@ int main(int argc, char** argv) {
 }
 
 
-void setPerFrameUniforms(Shader* shader, Camera& camera, DirectionalLight& dirL, PointLight& pointL) {
+void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& dirL, PointLight& pointL) {
     shader->use();
-    shader->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
-    shader->setUniform("camera_world", camera.getPosition());
+    //shader->setUniform("viewProjMatrix", camera.getViewProjectionMatrix());
+    shader->setUniform("camera_world", camera.getPos());
 
     shader->setUniform("dirL.color", dirL.color);
     shader->setUniform("dirL.direction", dirL.direction);
@@ -333,18 +318,27 @@ void setPerFrameUniforms(Shader* shader, Camera& camera, DirectionalLight& dirL,
 }
 
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    _dragging = true;
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-        _dragging = false;
-        _strafing = true;
-    } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
-        _strafing = false;
-        _dragging = true;
+void mouse_callback(GLFWwindow* window, double xPos, double yPos) {
+    static double lastX = 0.0;
+    static double lastY = 0.0;
+
+    if (firstMouse) {
+        lastX = xPos;
+        lastY = yPos;
+        firstMouse = false;
     }
+
+    float xOffset = xPos - lastX;
+    float yOffset = yPos - lastY;
+    lastX = xPos;
+    lastY = yPos;
+    camera.rotate(yOffset, xOffset);
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) { _zoom -= float(yoffset) * 0.5f; }
+void scroll_callback(GLFWwindow* window, double xOffset, double yOffset) {
+    camera.zoom(yOffset);
+}
+
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     // F1 - Wireframe

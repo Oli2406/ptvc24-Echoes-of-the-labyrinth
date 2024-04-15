@@ -101,6 +101,7 @@ public:
 	}
 
 	void jump(float delta) {
+<<<<<<< HEAD
     if (!isInAir && jumping) {
 		isInAir = true;
         upwardSpeed = 5.0f;
@@ -111,6 +112,16 @@ public:
         upwardSpeed += GRAVITY * delta;
 		std::cout << position.y << std::endl;
     }
+=======
+		if (!isInAir && jumping) {
+			upwardSpeed = JUMP_POWER;
+			isInAir = true;
+		}
+		if (isInAir) {
+			upwardSpeed += GRAVITY * delta;
+			position.y = upwardSpeed * delta;
+			std::cout << position.y << std::endl;
+>>>>>>> 15c17df1f103bb011eb128dd740c9201d437c852
 
 	if (position.y <= 0.0f && upwardSpeed <= -5.0f) {
 		std::cout << upwardSpeed << std::endl;

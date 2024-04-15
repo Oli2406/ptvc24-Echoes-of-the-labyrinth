@@ -38,7 +38,7 @@ set(LINK_LIBRARIES
     OpenGL::GL
 )
 
-add_executable(${PROJECT_NAME} ${SOURCES}  "src/Player.h")
+add_executable(${PROJECT_NAME} ${SOURCES}  "src/Player.h" )
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBRARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBRARIES})
