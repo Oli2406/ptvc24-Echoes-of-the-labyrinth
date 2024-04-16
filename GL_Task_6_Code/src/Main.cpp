@@ -16,6 +16,9 @@
 #include "Skybox.h"
 #include "Player.h"
 #include "ArcCamera.h"
+#include <physx/PxPhysics.h>
+#include <physx/PxPhysicsAPI.h>
+
 
 
 #undef min
