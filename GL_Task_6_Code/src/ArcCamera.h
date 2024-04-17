@@ -37,7 +37,7 @@ public:
 		pitch = pitchly;
 	}
 
-	mat4 calculateMatrix(float radius, float pitch, float yaw, Player player) {
+	mat4 calculateMatrix(float radius, float pitch, float yaw, Player& player) {
 		//compute camera Position with Euler Angles
 		float x = radius * sin(yaw) * cos(pitch) - player.getPos().x;
 		float y = radius * sin(pitch) + player.getPos().y;
