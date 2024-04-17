@@ -37,6 +37,8 @@ set(LINK_LIBRARIES
     debug assimp-vc143-mtd
     OpenGL::GL
 )
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+  CACHE STRING "Vcpkg toolchain file")
 
 add_executable(${PROJECT_NAME} ${SOURCES}  "src/Player.h" )
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})

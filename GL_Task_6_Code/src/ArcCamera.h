@@ -42,9 +42,9 @@ public:
 
 	mat4 calculateMatrix(float radius, float pitch, float yaw, Player player) {
 		//compute camera Position with Euler Angles
-		float x = radius * sin(yaw) * cos(pitch) - player.getPosition().x;
-		float y = radius * sin(pitch) + player.getPosition().y;
-		float z = radius * cos(yaw) * cos(pitch) + player.getPosition().z;
+		float x = radius * sin(yaw) * cos(pitch) - player.getPos().x;
+		float y = radius * sin(pitch) + player.getPos().y;
+		float z = radius * cos(yaw) * cos(pitch) + player.getPos().z;
 		vec3 position(-x, y, z);
 		pos = position;
 		mat4 viewMatrix = translate(mat4(1.0f), position);
