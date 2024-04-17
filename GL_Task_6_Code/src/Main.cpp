@@ -236,9 +236,12 @@ int main(int argc, char** argv) {
         //play = glm::rotate(play, glm::vec3(player1.getRotX(), player1.getRotY(), player1.getRotZ));
 
 
-        while (!glfwWindowShouldClose(window)) { 
+        while (!glfwWindowShouldClose(window)) {
 
-            viewProjectionMatrix = projection * camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw());
+            player1.checkInputs(window, dt);
+            player1.jump(dt);
+
+            viewProjectionMatrix = projection * camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
             
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             modelShader->use();
@@ -249,12 +252,6 @@ int main(int argc, char** argv) {
             //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             //model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
-
-
-            player1.checkInputs(window, dt);
-            player1.jump(dt);
-            //player1.move(dt);
-
 
             play = glm::translate(play, player1.getPosition());
             play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));

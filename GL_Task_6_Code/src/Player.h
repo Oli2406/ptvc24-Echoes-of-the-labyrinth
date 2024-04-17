@@ -36,11 +36,16 @@ private:
 	float upwardSpeed = 0;
 	const float TERRAIN_HEIGHT = 0;
 	boolean isInAir = false;
-	std::string input;
 	boolean jumping = false;
 
 public:
-	Player(){}
+	Player(){
+		position = glm::vec3(0, 0, 0);
+		rotX = 0;
+		rotY = 0;
+		rotZ = 0;
+		scale = 0;
+	}
 
 	Player(Model model, glm::vec3 position, float rotX, float rotY, float rotZ, float scale) 
 	{
@@ -72,6 +77,10 @@ public:
 		glm::vec3 now = position - pos;
 		pos = position;
 		return now;
+	}
+
+	glm::vec3 getPos() {
+		return position;
 	}
 
 	Model getModel() {
@@ -127,9 +136,6 @@ public:
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 			position.x += 0.1f * delta;
 		}
-		else {
-			position.x = 0;
-		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 			position.z += 0.1f * delta;
@@ -137,15 +143,8 @@ public:
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 			position.z -= 0.1f * delta;
 		}
-		else {
-			position.z = 0;
-		}
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-			if (!jumping) {
-				jumping = true;
-				upwardSpeed = 0.2f;
-				position.y = 0.0f;
-			}
+			jumping = true;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
 			jumping = false;

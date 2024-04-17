@@ -5,6 +5,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "Player.h"
 
 using namespace glm;
 
@@ -16,7 +17,10 @@ private:
 	float pitch;
 	float sensitivity;
 	vec3 pos;
-
+	boolean jumping = false;
+	boolean isInAir = false;
+	const float GRAVITY = -50.0f;
+	float upwardSpeed = 0;
 
 public:
 	ArcCamera() {
@@ -36,11 +40,11 @@ public:
 		pitch = pitchly;
 	}
 
-	mat4 calculateMatrix(float radius, float pitch, float yaw) {
+	mat4 calculateMatrix(float radius, float pitch, float yaw, Player player) {
 		//compute camera Position with Euler Angles
-		float x = radius * sin(yaw) * cos(pitch);
-		float y = radius * sin(pitch);
-		float z = radius * cos(yaw) * cos(pitch);
+		float x = radius * sin(yaw) * cos(pitch) - player.getPosition().x;
+		float y = radius * sin(pitch) + player.getPosition().y;
+		float z = radius * cos(yaw) * cos(pitch) + player.getPosition().z;
 		vec3 position(-x, y, z);
 		pos = position;
 		mat4 viewMatrix = translate(mat4(1.0f), position);
@@ -81,5 +85,44 @@ public:
 		//Calculate the zoom and limit it.
 		radius -= yoffset;
 		radius = glm::clamp(radius, 1.0f, 100.0f);
+	}
+
+	void checkInputs(GLFWwindow* window, float delta) {
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+			pos.x -= 0.1f * delta;
+		}
+		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+			pos.x += 0.1f * delta;
+		}
+
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+			pos.z += 0.1f * delta;
+		}
+		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+			pos.z -= 0.1f * delta;
+		}
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+			jumping = true;
+		}
+		else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
+			jumping = false;
+		}
+	}
+
+	void jump(float delta) {
+		if (!isInAir && jumping) {
+			upwardSpeed = 10;
+			isInAir = true;
+		}
+		if (isInAir) {
+			pos.y += upwardSpeed * delta;
+			upwardSpeed += GRAVITY * delta;
+
+			if (pos.y <= 0.0f) {
+				pos.y = 0.0f;
+				upwardSpeed = 0.0f;
+				isInAir = false;
+			}
+		}
 	}
 };
