@@ -255,6 +255,7 @@ int main(int argc, char** argv) {
             viewProjectionMatrix = projection * viewMatrix;
 
             player1.checkInputs(window, dt, camDir);
+            player1.jump(dt);
 
             modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -275,10 +276,10 @@ int main(int argc, char** argv) {
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-            //map.Draw(modelShader);
-            //podest.Draw(modelShader);
+            map.Draw(modelShader);
+            podest.Draw(modelShader);
             floor.Draw(modelShader);
-            //diamond.Draw(modelShader);
+            diamond.Draw(modelShader);
 
             sky->use();
             sky->setUniform("viewProjMatrix", viewProjectionMatrix);

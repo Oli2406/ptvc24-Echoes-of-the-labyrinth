@@ -137,14 +137,14 @@ public:
 			position += horizontalDirection * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position.z += 0.35f * delta;
+			position -= horizontalDirection * delta;
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position.x -= 0.35f * delta; 
+			position -= glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position.x += 0.35f * delta; 
+			position += glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta;
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
