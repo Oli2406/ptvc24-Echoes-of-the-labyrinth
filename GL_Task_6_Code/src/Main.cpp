@@ -16,8 +16,6 @@
 #include "Skybox.h"
 #include "Player.h"
 #include "ArcCamera.h"
-#include <physx/PxPhysics.h>
-#include <physx/PxPhysicsAPI.h>
 
 
 
@@ -42,6 +40,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void mouse_callback(GLFWwindow* window, double xPos, double yPos);
 void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& dirL, PointLight& pointL);
+// Berechnung des Winkels in der horizontalen Ebene (von links nach rechts)
+double horizontalAngleTo(glm::vec3 vec1, glm::vec3 vec2);
 
 /* --------------------------------------------- */
 // Global variables
@@ -60,6 +60,7 @@ static float _zoom = 5.0f;
 Player player1;
 ArcCamera camera;
 bool firstMouse = true;
+static float PI = 3.14159265358979;
 
 /* --------------------------------------------- */
 // Main
@@ -237,29 +238,37 @@ int main(int argc, char** argv) {
         play = glm::translate(play, player1.getPosition());
         //play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
         //play = glm::rotate(play, glm::vec3(player1.getRotX(), player1.getRotY(), player1.getRotZ));
-
+        mat4 viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
+        glm::vec3 camDir = camera.extractCameraDirection(viewMatrix);
+        double angle = horizontalAngleTo(glm::vec3(0, 0, -1), camDir);
 
         while (!glfwWindowShouldClose(window)) {
-
-            player1.checkInputs(window, dt);
-            player1.jump(dt);
-
-            viewProjectionMatrix = projection * camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
             
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             modelShader->use();
 
             glfwPollEvents();
 
+            player1.checkInputs(window, dt);
+            player1.jump(dt);
+
+            viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
+            angle = horizontalAngleTo(glm::vec3(0, 0, -1), camera.extractCameraDirection(viewMatrix));
+            camDir = camera.extractCameraDirection(viewMatrix);
+            viewProjectionMatrix = projection * viewMatrix;
+
             modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
             //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             //model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
 
+
             play = glm::translate(play, player1.getPosition());
             play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
+            play = glm::rotate(play, static_cast<float>((angle)), glm::vec3(0.0f, 1.0f, 0.0f));
 
             player1.Draw(modelShader);
+
 
             // Set per-frame uniforms
             //setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
@@ -300,6 +309,29 @@ int main(int argc, char** argv) {
     glfwTerminate();
 
     return EXIT_SUCCESS;
+}
+
+double horizontalAngleTo(glm::vec3 vec1, glm::vec3 vec2) {
+    // Berechnung des Skalarprodukts von u und v in der horizontalen Ebene
+    double dotProduct = vec1.x * vec2.x + vec1.y * vec2.y;
+
+    // Berechnung der Normen ||u|| und ||v|| in der horizontalen Ebene
+    double norm_u = std::sqrt(vec1.x * vec1.x + vec1.y * vec1.y);
+    double norm_v = std::sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
+
+    // Berechnung des Kosinus des horizontalen Winkels
+    double cosTheta = dotProduct / (norm_u * norm_v);
+
+    // Begrenze den Wert des Kosinus, um sicherzustellen, dass er im gültigen Bereich [-1, 1] bleibt
+    cosTheta = std::max(-1.0, std::min(1.0, cosTheta));
+
+    // Berechnung des horizontalen Winkels in Radiant
+    double theta = std::acos(cosTheta);
+
+    // Umrechnung von Radiant in Grad
+    double thetaDegrees = theta * 180.0 / PI;
+
+    return thetaDegrees;
 }
 
 
