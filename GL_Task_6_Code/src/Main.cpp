@@ -3,8 +3,6 @@
  * Institute of Computer Graphics and Algorithms.
  * This file is part of the GCG Lab Framework and must not be redistributed.
  */
-#include "Physics.h"
-
 #include "Utils.h"
 #include <sstream>
 #include "Shader.h"
@@ -16,7 +14,6 @@
 #include "Skybox.h"
 #include "Player.h"
 #include "ArcCamera.h"
-#include "Physics.h"
 
 
 
