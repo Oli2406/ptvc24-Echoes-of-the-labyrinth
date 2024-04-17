@@ -3,11 +3,11 @@
  * Institute of Computer Graphics and Algorithms.
  * This file is part of the GCG Lab Framework and must not be redistributed.
  */
+#include "Physics.h"
 
 #include "Utils.h"
 #include <sstream>
 #include "Shader.h"
-#include "Geometry.h"
 #include "Material.h"
 #include "Light.h"
 #include "Texture.h"
@@ -16,10 +16,6 @@
 #include "Skybox.h"
 #include "Player.h"
 #include "ArcCamera.h"
-#include <physx/PxPhysics.h>
-#include <physx/PxPhysicsAPI.h>
-
-
 
 #undef min
 #undef max
@@ -214,6 +210,8 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0]);
 
+        //Physics simulation;
+
         player1.set(podest, glm::vec3(0.0f, 0.0f, 0.0f), 0, 0, 0, 1);
 
         // Initialize camera
@@ -254,7 +252,7 @@ int main(int argc, char** argv) {
             modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
             //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             //model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
+            //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
 
             play = glm::translate(play, player1.getPosition());
             play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
@@ -265,7 +263,7 @@ int main(int argc, char** argv) {
             //setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
             //setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
 
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
             //map.Draw(modelShader);
             //podest.Draw(modelShader);

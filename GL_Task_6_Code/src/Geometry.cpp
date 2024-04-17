@@ -2,13 +2,13 @@
  * Copyright 2023 Vienna University of Technology.
  * Institute of Computer Graphics and Algorithms.
  * This file is part of the GCG Lab Framework and must not be redistributed.
- */
-
+*/
+/*
 #include "Geometry.h"
 
 #undef min
-#undef max
-
+#undef max*/
+/*
 Geometry::Geometry(glm::mat4 modelMatrix, const GeometryData& data, std::shared_ptr<Material> material)
     : elements{static_cast<unsigned int>(data.indices.size())}
     , modelMatrix{modelMatrix}
@@ -576,6 +576,6 @@ GeometryData Geometry::createSphereGeometry(unsigned int longitudeSegments, unsi
 
     return data;
 }
-
+*/
 
 

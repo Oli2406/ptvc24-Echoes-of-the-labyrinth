@@ -35,12 +35,23 @@ set(LINK_LIBRARIES
     debug glew32sd optimized glew32s
     debug GCG_GL_Lib_Debug optimized GCG_GL_Lib_Release
     debug assimp-vc143-mtd
+    debug LowLevel_static_64
+    debug LowLevelAABB_static_64
+    debug LowLevelDynamics_static_64
+    debug PhysX_64
+    debug PhysXCharacterKinematic_static_64
+    debug PhysXCommon_64
+    debug PhysXCooking_64
+    debug PhysXFoundation_64
+    debug PhysXTask_static_64
+    debug PhysXVehicle_static_64
+    debug PhysXVehicle2_static_64
+    debug SceneQuery_static_64
+    debug SimulationController_static_64
     OpenGL::GL
 )
-set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
-  CACHE STRING "Vcpkg toolchain file")
 
-add_executable(${PROJECT_NAME} ${SOURCES}  "src/Player.h" )
+add_executable(${PROJECT_NAME} ${SOURCES}  "src/Player.h"  "src/Physics.h")
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBRARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBRARIES})
