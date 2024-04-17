@@ -253,7 +253,7 @@ int main(int argc, char** argv) {
             player1.jump(dt);
 
             viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
-            angle = horizontalAngleTo(glm::vec3(0, 0, -1), camera.extractCameraDirection(viewMatrix));
+            angle = horizontalAngleTo(camDir, camera.extractCameraDirection(viewMatrix));
             camDir = camera.extractCameraDirection(viewMatrix);
             viewProjectionMatrix = projection * viewMatrix;
 
