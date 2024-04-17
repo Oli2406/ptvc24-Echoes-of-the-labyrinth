@@ -3,11 +3,11 @@
  * Institute of Computer Graphics and Algorithms.
  * This file is part of the GCG Lab Framework and must not be redistributed.
  */
+#include "Physics.h"
 
 #include "Utils.h"
 #include <sstream>
 #include "Shader.h"
-#include "Geometry.h"
 #include "Material.h"
 #include "Light.h"
 #include "Texture.h"
@@ -16,6 +16,7 @@
 #include "Skybox.h"
 #include "Player.h"
 #include "ArcCamera.h"
+#include "Physics.h"
 
 
 
@@ -215,6 +216,8 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0]);
 
+        //Physics simulation;
+
         player1.set(podest, glm::vec3(0.0f, 0.0f, 0.0f), 0, 0, 0, 1);
 
         // Initialize camera
@@ -249,16 +252,15 @@ int main(int argc, char** argv) {
 
             glfwPollEvents();
 
-            player1.checkInputs(window, dt);
-            player1.jump(dt);
-
             viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
             angle = horizontalAngleTo(glm::vec3(0, 0, -1), camera.extractCameraDirection(viewMatrix));
             camDir = camera.extractCameraDirection(viewMatrix);
             viewProjectionMatrix = projection * viewMatrix;
 
+            player1.checkInputs(window, dt, camDir);
+
             modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
-            //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             //model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
 
@@ -276,10 +278,10 @@ int main(int argc, char** argv) {
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-            //map.Draw(modelShader);
-            //podest.Draw(modelShader);
+            map.Draw(modelShader);
+            podest.Draw(modelShader);
             floor.Draw(modelShader);
-            //diamond.Draw(modelShader);
+            diamond.Draw(modelShader);
 
             sky->use();
             sky->setUniform("viewProjMatrix", viewProjectionMatrix);
