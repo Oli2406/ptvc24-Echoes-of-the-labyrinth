@@ -17,10 +17,7 @@ private:
 	float pitch;
 	float sensitivity;
 	vec3 pos;
-	boolean jumping = false;
-	boolean isInAir = false;
-	const float GRAVITY = -50.0f;
-	float upwardSpeed = 0;
+	const float PI = 3.14f;
 
 public:
 	ArcCamera() {
@@ -55,6 +52,22 @@ public:
 		return viewMatrix;
 	}
 
+	vec3 extractCameraDirection(mat4 viewMatrix) {
+		// Die Richtung, in die die Kamera schaut, entspricht normalerweise der negativen Z-Achse der View-Matrix.
+		// Daher nehmen wir die negative Z-Achse der inversen View-Matrix.
+
+		// Inverse der View-Matrix, um die Kameraorientierung zu erhalten
+		mat4 invViewMatrix = inverse(viewMatrix);
+
+		// Die Richtung der Kamera ist normalerweise entlang der negativen Z-Achse der inversen View-Matrix
+		// (d.h. in einem rechtsdrehenden Koordinatensystem ist dies die dritte Spalte der Matrix).
+		vec3 cameraDirection = -vec3(invViewMatrix[2]); // Negative Z-Achse der inversen View-Matrix
+
+		// Rückgabe der normalisierten Richtung
+		return normalize(cameraDirection);
+	}
+
+
 	//getters used for modifying viewMatrix in Renderloop.
 	float getRadius() {
 		return radius;
@@ -85,44 +98,5 @@ public:
 		//Calculate the zoom and limit it.
 		radius -= yoffset;
 		radius = glm::clamp(radius, 1.0f, 100.0f);
-	}
-
-	void checkInputs(GLFWwindow* window, float delta) {
-		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			pos.x -= 0.1f * delta;
-		}
-		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			pos.x += 0.1f * delta;
-		}
-
-		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			pos.z += 0.1f * delta;
-		}
-		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			pos.z -= 0.1f * delta;
-		}
-		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-			jumping = true;
-		}
-		else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
-			jumping = false;
-		}
-	}
-
-	void jump(float delta) {
-		if (!isInAir && jumping) {
-			upwardSpeed = 10;
-			isInAir = true;
-		}
-		if (isInAir) {
-			pos.y += upwardSpeed * delta;
-			upwardSpeed += GRAVITY * delta;
-
-			if (pos.y <= 0.0f) {
-				pos.y = 0.0f;
-				upwardSpeed = 0.0f;
-				isInAir = false;
-			}
-		}
 	}
 };

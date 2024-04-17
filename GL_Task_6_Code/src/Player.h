@@ -131,17 +131,17 @@ public:
 
 	void checkInputs(GLFWwindow* window, float delta) {
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			position.x -= 0.35f * delta;
+			position.z -= 0.35f * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position.x += 0.35f * delta;
+			position.z += 0.35f * delta;
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position.z += 0.35f * delta;
+			position.x -= 0.35f * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position.z -= 0.35f * delta;
+			position.x += 0.35f * delta;
 		}
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 			jumping = true;
