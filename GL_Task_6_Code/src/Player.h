@@ -41,9 +41,9 @@ private:
 public:
 	Player(){
 		position = glm::vec3(0, 0, 0);
-		rotX = 0;
-		rotY = 0;
-		rotZ = 0;
+		rotX = 0.5f;
+		rotY = 0.5f;
+		rotZ = 0.5f;
 		scale = 0;
 	}
 
@@ -129,21 +129,22 @@ public:
 		}
 	}
 
+
 	void checkInputs(GLFWwindow* window, float delta, glm::vec3 direction) {
 		glm::vec3 horizontalDirection = glm::normalize(glm::vec3(direction.x, 0.0f, direction.z));
 
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			position += horizontalDirection * (0.35f * delta);
+			position += horizontalDirection * delta;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position -= horizontalDirection * (0.35f * delta);
+			position -= horizontalDirection * delta;
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position -= glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * (0.35f * delta); 
+			position -= glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta; 
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position += glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * (0.35f * delta); 
+			position += glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta; 
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {

@@ -264,7 +264,6 @@ int main(int argc, char** argv) {
             //model = glm::rotate(model, glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
 
-
             play = glm::translate(play, player1.getPosition());
             play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
             play = glm::rotate(play, static_cast<float>((angle)), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -525,3 +524,5 @@ static std::string FormatDebugOutput(GLenum source, GLenum type, GLuint id, GLen
 
     return stringStream.str();
 }
+
+
