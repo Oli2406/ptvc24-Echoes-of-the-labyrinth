@@ -13,13 +13,14 @@ if(MSVC)
     add_compile_options("$<$<CONFIG:Debug>:/ZI>$<$<CONFIG:Release>:/Zi>")
     add_compile_options(/FS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Qpar")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 file(GLOB SOURCES "src/*.cpp" "src/*.h")
-set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/include/physx")
 if(UNIX AND NOT APPLE)
     set(LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/linux" ".")
 elseif(UNIX AND APPLE)
@@ -30,28 +31,25 @@ endif()
 
 find_package(OpenGL REQUIRED)
 
+
 set(LINK_LIBRARIES
     debug glfw3d optimized glfw3
     debug glew32sd optimized glew32s
     debug GCG_GL_Lib_Debug optimized GCG_GL_Lib_Release
     debug assimp-vc143-mtd
-    debug LowLevel_static_64
-    debug LowLevelAABB_static_64
-    debug LowLevelDynamics_static_64
-    debug PhysX_64
-    debug PhysXCharacterKinematic_static_64
-    debug PhysXCommon_64
-    debug PhysXCooking_64
-    debug PhysXFoundation_64
-    debug PhysXTask_static_64
-    debug PhysXVehicle_static_64
-    debug PhysXVehicle2_static_64
-    debug SceneQuery_static_64
-    debug SimulationController_static_64
+    debug BulletCollision_Debug optimized BulletCollision_RelWithDebugInfo
+    debug BulletDynamics_Debug optimized BulletDynamics_RelWithDebugInfo
+    debug LinearMath_Debug optimized LinearMath_RelWithDebugInfo
+    debug PhysXCommon_64_debug optimized PhysXCommon_64
+    debug PhysX_64_debug optimized PhysX_64
+    debug PhysXFoundation_64_debug optimized PhysXFoundation_64
+    debug PhysXExtensions_static_64_debug optimized PhysXExtensions_static_64
+    debug PhysXPvdSDK_static_64_debug optimized PhysXPvdSDK_static_64
     OpenGL::GL
 )
+message(LINK_LIBRARIES=${LINK_LIBRARIES})
 
-add_executable(${PROJECT_NAME} ${SOURCES}  "src/Player.h"  "src/Physics.h")
+add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBRARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBRARIES})

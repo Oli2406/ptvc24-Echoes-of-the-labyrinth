@@ -17,11 +17,24 @@
 #include "Player.h"
 #include "ArcCamera.h"
 #include "Physics.h"
-
-
+#include "PxPhysicsAPI.h"
 
 #undef min
 #undef max
+
+using namespace physx;
+
+PxDefaultAllocator		gAllocator;
+PxDefaultErrorCallback	gErrorCallback;
+
+PxFoundation* gFoundation = nullptr;
+PxPhysics* gPhysics = nullptr;
+
+PxDefaultCpuDispatcher* gDispatcher = nullptr;
+PxScene* gScene = nullptr;
+
+PxMaterial* gMaterial = nullptr;
+PxPvd* gPvd = nullptr;
 
 /* --------------------------------------------- */
 // Prototypes
@@ -43,6 +56,9 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& dirL, PointLight& pointL);
 // Berechnung des Winkels in der horizontalen Ebene (von links nach rechts)
 double horizontalAngleTo(glm::vec3 vec1, glm::vec3 vec2);
+void initPhysics();
+void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent);
+void stepPhysics(bool interactive);
 
 /* --------------------------------------------- */
 // Global variables
@@ -163,6 +179,8 @@ int main(int argc, char** argv) {
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     }
 
+    
+
 
     /* --------------------------------------------- */
     // Init framework
@@ -216,6 +234,7 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0]);
 
+
         //Physics simulation;
 
         player1.set(podest, glm::vec3(0.0f, 0.0f, 0.0f), 0, 0, 0, 1);
@@ -245,12 +264,16 @@ int main(int argc, char** argv) {
         glm::vec3 camDir = camera.extractCameraDirection(viewMatrix);
         double angle = horizontalAngleTo(glm::vec3(0, 0, -1), camDir);
 
+        initPhysics();
+
         while (!glfwWindowShouldClose(window)) {
             
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             modelShader->use();
 
             glfwPollEvents();
+
+            stepPhysics(true);
 
             viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
             angle = horizontalAngleTo(glm::vec3(0, 0, -1), camera.extractCameraDirection(viewMatrix));
@@ -525,4 +548,58 @@ static std::string FormatDebugOutput(GLenum source, GLenum type, GLuint id, GLen
     return stringStream.str();
 }
 
+void initPhysics()
+{
+    gFoundation = PxCreateFoundation(0x05030000, gAllocator, gErrorCallback);
 
+    gPvd = PxCreatePvd(*gFoundation);
+    PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
+    gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+
+    gPhysics = PxCreatePhysics(0x05030000, *gFoundation, PxTolerancesScale(), true, gPvd);
+
+    PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
+    sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+    gDispatcher = PxDefaultCpuDispatcherCreate(2);
+    sceneDesc.cpuDispatcher = gDispatcher;
+    sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+    gScene = gPhysics->createScene(sceneDesc);
+
+    PxPvdSceneClient* pvdClient = gScene->getScenePvdClient();
+    if (pvdClient)
+    {
+        pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
+        pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
+        pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
+    }
+    gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+
+    PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
+    gScene->addActor(*groundPlane);
+    cout << "code successful until here" << endl;
+}
+
+void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
+{
+    PxShape* shape = gPhysics->createShape(PxBoxGeometry(halfExtent, halfExtent, halfExtent), *gMaterial);
+    for (PxU32 i = 0; i < size; i++)
+    {
+        for (PxU32 j = 0; j < size - i; j++)
+        {
+            PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
+            PxRigidDynamic* body = gPhysics->createRigidDynamic(t.transform(localTm));
+            body->attachShape(*shape);
+            PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
+            gScene->addActor(*body);
+        }
+    }
+    shape->release();
+}
+
+
+void stepPhysics(bool interactive)
+{
+    PX_UNUSED(interactive);
+    gScene->simulate(1.0f / 60.0f);
+    gScene->fetchResults(true);
+}

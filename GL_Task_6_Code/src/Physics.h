@@ -1,6 +1,5 @@
 #pragma once
 
-#include <PxPhysics.h>
 #include <PxPhysicsAPI.h>
 
 class Physics {
@@ -17,17 +16,17 @@ private:
 
 public:
     Physics() {
-        mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, mDefaultAllocatorCallback, mDefaultErrorCallback);
+        mFoundation = PxCreateFoundation(0x05030000, mDefaultAllocatorCallback, mDefaultErrorCallback);
         if (!mFoundation)
             throw("PxCreateFoundation failed!");
 
-        mPvd = PxCreatePvd(*mFoundation);
+        mPvd = physx::PxCreatePvd(*mFoundation);
         physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
         mPvd->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
 
         mToleranceScale.length = 100; // typical length of an object
         mToleranceScale.speed = 981;  // typical speed of an object, gravity*1s is a reasonable choice
-        mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, mPvd);
+        mPhysics = PxCreatePhysics(0x05030000, *mFoundation, mToleranceScale, true, mPvd);
 
         physx::PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
         sceneDesc.gravity = physx::PxVec3(0.0f, -9.81f, 0.0f);
