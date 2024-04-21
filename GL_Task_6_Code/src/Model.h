@@ -6,16 +6,22 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <memory>
 
 #include "Shader.h"
 #include "Mesh.h"
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "PxPhysicsAPI.h"
+#include "cooking/PxCooking.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
 using namespace std;
+using namespace physx;
 
 GLint TextureFromFile( const char *path, string directory );
 
@@ -27,6 +33,11 @@ public:
     Model( GLchar *path )
     {
         this->loadModel( path );
+    }
+
+    Model(GLchar* path, PxPhysics* physics, PxScene* scene) {
+        this->loadModel(path);
+        this->initPhysics(physics, scene);
     }
 
     Model() {
@@ -47,6 +58,9 @@ private:
     vector<Mesh> meshes;
     string directory;
     vector<Text> textures_loaded;	// Stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
+    PxPhysics* physics;
+    PxScene* scene;
+    vector<PxRigidStatic*> physxActors;
     
 public:
 
@@ -69,6 +83,25 @@ public:
         // Process ASSIMP's root node recursively
         this->processNode( scene->mRootNode, scene );
     }
+
+    void initPhysics(PxPhysics* physics, PxScene* scene) {
+        this->physics = physics;
+        this->scene = scene;
+
+        // Iterate over meshes and create PhysX static actors for collision detection
+        for (GLuint i = 0; i < this->meshes.size(); i++)
+        {
+            PxTriangleMesh* triangleMesh = createTriangle(this->meshes[i]);
+
+            PxRigidStatic* staticActor = physics->createRigidStatic(PxTransform(PxIdentity));
+            PxShape* shape = physics->createShape(PxTriangleMeshGeometry(triangleMesh), *physics->createMaterial(0.5f, 0.5f, 0.1f));
+            staticActor->attachShape(*shape);
+            scene->addActor(*staticActor);
+
+            this->physxActors.push_back(staticActor);
+        }
+    }
+
 
 private:
     
@@ -169,6 +202,37 @@ private:
         
         // Return a mesh object created from the extracted mesh data
         return Mesh( vertices, indices, textures );
+    }
+
+    PxTriangleMesh* createTriangle(const Mesh& mesh)
+    {
+        // Extract vertices and indices from Mesh
+        vector<Vertex> vertices = mesh.vertices;
+        vector<GLuint> indices = mesh.indices;
+
+        PxVec3* pxVertices = new PxVec3[vertices.size()];
+        for (size_t i = 0; i < vertices.size(); i++)
+        {
+            pxVertices[i] = PxVec3(vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z);
+        }
+
+        PxTriangleMeshDesc meshDesc;
+        PxTriangleMeshCookingResult::Enum result;
+        meshDesc.points.count = vertices.size();
+        meshDesc.points.stride = sizeof(PxVec3);
+        meshDesc.points.data = pxVertices;
+
+        meshDesc.triangles.count = indices.size() / 3;
+        meshDesc.triangles.stride = 3 * sizeof(GLuint);
+        meshDesc.triangles.data = indices.data();
+
+        const PxCookingParams cookingParams(physics->getTolerancesScale());
+
+        PxTriangleMesh* triangleMesh = PxCreateTriangleMesh(cookingParams, meshDesc);
+
+        delete[] pxVertices;
+
+        return triangleMesh;
     }
     
     // Checks all material textures of a given type and loads the textures if they're not loaded yet.

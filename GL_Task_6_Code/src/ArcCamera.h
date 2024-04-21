@@ -53,17 +53,8 @@ public:
 	}
 
 	vec3 extractCameraDirection(mat4 viewMatrix) {
-		// Die Richtung, in die die Kamera schaut, entspricht normalerweise der negativen Z-Achse der View-Matrix.
-		// Daher nehmen wir die negative Z-Achse der inversen View-Matrix.
-
-		// Inverse der View-Matrix, um die Kameraorientierung zu erhalten
 		mat4 invViewMatrix = inverse(viewMatrix);
-
-		// Die Richtung der Kamera ist normalerweise entlang der negativen Z-Achse der inversen View-Matrix
-		// (d.h. in einem rechtsdrehenden Koordinatensystem ist dies die dritte Spalte der Matrix).
-		vec3 cameraDirection = -vec3(invViewMatrix[2]); // Negative Z-Achse der inversen View-Matrix
-
-		// Rückgabe der normalisierten Richtung
+		vec3 cameraDirection = -vec3(invViewMatrix[2]);
 		return normalize(cameraDirection);
 	}
 
