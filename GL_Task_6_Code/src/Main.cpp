@@ -238,7 +238,7 @@ int main(int argc, char** argv) {
         float rotAngle = 0.3f;
 
         mat4 viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
-        glm::vec3 camDir = camera.extractCameraDirection(viewMatrix);
+        glm::vec3 camDir = camera.getPos();
 
         glm::mat4 play = glm::mat4(1.0f);
         play = glm::translate(play, player1.getPosition());
@@ -266,12 +266,12 @@ int main(int argc, char** argv) {
             //play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
 
             player1.checkInputs(window, dt, camDir);
-            player1.updateRotation(camDir);
-            if (camDir != prevCamDir) {
-                angle = camera.getPos().y * 0.0005f;
+            //player1.updateRotation(camDir);
+            /*if (camDir != prevCamDir) {
+                angle = player1.getRotY() * 0.00005f;
                 std::cout << angle << endl;
                 play = glm::rotate(play, float(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-            }
+            }*/
             play = glm::translate(play, player1.getPosition());
 
             prevRotation = angle;

@@ -130,25 +130,20 @@ public:
 		}
 	}
 
-	void updateRotation(glm::vec3 cameraDirection) {
+	/*void updateRotation(glm::vec3 cameraDirection) {
 
-		float yaw = atan2(-cameraDirection.y, -cameraDirection.x);
+		float yaw = atan2(cameraDirection.x, cameraDirection.z);
 
 		float degreesYaw = glm::degrees(yaw);
 
-		if (degreesYaw < -180.0f) {
+		degreesYaw = fmod(degreesYaw, 360.0f);
+		if (degreesYaw < 0.0f) {
 			degreesYaw += 360.0f;
 		}
-		else if (degreesYaw > 180.0f) {
-			degreesYaw -= 360.0f;
-		}
 
+		// Update rotation
 		rotY = degreesYaw;
-	}
-
-	glm::vec3 getRotation() {
-		return glm::vec3(rotX, rotY, rotZ);
-	}
+	}*/
 
 
 	void checkInputs(GLFWwindow* window, float delta, glm::vec3 direction) {
@@ -156,20 +151,20 @@ public:
 
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 			position += horizontalDirection * delta;
-			
+
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 			position -= horizontalDirection * delta;
-			
+
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 			position -= glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta;
-			
+
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 			position += glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta;
-			
+
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {

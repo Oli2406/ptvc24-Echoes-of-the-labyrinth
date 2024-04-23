@@ -5,7 +5,7 @@ if(APPLE)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 endif()
 
-project(GCGProject_GL)
+project(executable1_echoes_of_the_labyrinth)
 
 if(MSVC)
     # https://docs.microsoft.com/en-us/previous-versions/958x11bc(v=vs.140)
@@ -36,7 +36,7 @@ set(LINK_LIBRARIES
     debug glfw3d optimized glfw3
     debug glew32sd optimized glew32s
     debug GCG_GL_Lib_Debug optimized GCG_GL_Lib_Release
-    debug assimp-vc143-mtd
+    debug assimp-vc143-mtd optimized assimp-vc143-mtd
     debug BulletCollision_Debug optimized BulletCollision_RelWithDebugInfo
     debug BulletDynamics_Debug optimized BulletDynamics_RelWithDebugInfo
     debug LinearMath_Debug optimized LinearMath_RelWithDebugInfo
