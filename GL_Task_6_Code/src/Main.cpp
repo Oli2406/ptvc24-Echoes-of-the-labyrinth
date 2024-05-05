@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
         string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.obj");
         Model adventurer(&path4[0]);
 
-        diamond.printNormals();
+        //diamond.printNormals();
 
 
         //Physics simulation;
@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+        DirectionalLight dirL(glm::vec3(1.0f), glm::vec3(0.0f, -1.0f, -1.0f));
         PointLight pointL(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f, 10.4f, 0.0f));
 
         // Render loop
