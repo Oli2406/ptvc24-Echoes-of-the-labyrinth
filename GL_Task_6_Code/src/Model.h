@@ -64,6 +64,17 @@ private:
     
 public:
 
+    void printNormals() {
+        int i = 0;
+        for (const auto& mesh : meshes) {
+            cout << "Normals for Mesh:" << endl;
+            for (const auto& vertex : mesh.vertices) {
+                cout << "Normal " << i << ": (" << vertex.Normal.x << ", " << vertex.Normal.y << ", " << vertex.Normal.z << ")" << endl;
+                i++;
+            }
+        }
+    }
+
     // Loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel( string path )
     {
@@ -149,6 +160,7 @@ private:
             vector.y = mesh->mNormals[i].y;
             vector.z = mesh->mNormals[i].z;
             vertex.Normal = vector;
+
             
             // Texture Coordinates
             if( mesh->mTextureCoords[0] ) // Does the mesh contain texture coordinates?

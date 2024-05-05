@@ -215,6 +215,8 @@ int main(int argc, char** argv) {
         string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.obj");
         Model adventurer(&path4[0]);
 
+        diamond.printNormals();
+
 
         //Physics simulation;
 
@@ -224,7 +226,8 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(0.8f), glm::vec3(0.0f, -1.0f, -1.0f));
+        DirectionalLight dirL(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+        PointLight pointL(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f, 10.4f, 0.0f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -237,6 +240,10 @@ int main(int argc, char** argv) {
         GLint modelLoc = glGetUniformLocation(modelShader->getHandle(), "model");
         float rotAngle = 0.3f;
 
+        glm::mat4 modelDiamiond = glm::mat4(1.0f);
+        modelDiamiond = glm::translate(modelDiamiond, glm::vec3(0.0f, 0.0f, 0.0f));
+        modelDiamiond = glm::scale(modelDiamiond, glm::vec3(3.0f, 3.0f, 3.0f));
+
         mat4 viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
         glm::vec3 camDir = camera.getPos();
 
@@ -247,6 +254,9 @@ int main(int argc, char** argv) {
         glm::vec3 prevCamDir = glm::vec3(0.0f, 0.0f, 0.0f);
         double prevRotation = 0.0f;
         double angle = 0.0f;
+
+        glm::vec3 materialCoefficients = glm::vec3(0.1f, 0.7f, 0.1f);
+        float alpha = 8.0f;
 
         while (!glfwWindowShouldClose(window)) {
             
@@ -260,10 +270,10 @@ int main(int argc, char** argv) {
             viewProjectionMatrix = projection * viewMatrix;
 
             modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(play));
-
-            //play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
+            modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
+            modelShader->setUniform("materialCoefficients", materialCoefficients);
+            modelShader->setUniform("specularAlpha", alpha);
 
             player1.checkInputs(window, dt, camDir);
             //player1.updateRotation(camDir);
@@ -281,14 +291,18 @@ int main(int argc, char** argv) {
 
 
             // Set per-frame uniforms
-            //setPerFrameUniforms(cornellShader.get(), camera, dirL, pointL);
-            //setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
+            setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
+            setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
             map.Draw(modelShader);
             podest.Draw(modelShader);
             floor.Draw(modelShader);
+
+            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelDiamiond));
             diamond.Draw(modelShader);
 
             sky->use();
