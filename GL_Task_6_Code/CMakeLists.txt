@@ -50,7 +50,7 @@ set(LINK_LIBRARIES
 )
 message(LINK_LIBRARIES=${LINK_LIBRARIES})
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES} "src/physics/PhysXInitializer.h" "src/physics/PhysXInitializer.cpp")
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBRARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBRARIES})
