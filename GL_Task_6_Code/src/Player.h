@@ -15,6 +15,8 @@
 #include "Shader.h"
 #include "Model.h"
 #include <cmath>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 using namespace std;
 
@@ -130,40 +132,39 @@ public:
 		}
 	}
 
-	/*void updateRotation(glm::vec3 cameraDirection) {
+	void updateRotation(glm::vec3 cameraDirection) {
+		cameraDirection = glm::normalize(cameraDirection);
+		float yaw = atan2(cameraDirection.y, cameraDirection.x);
+		float pitch = asin(-cameraDirection.z);
+		glm::quat yawQuat = glm::angleAxis(yaw, glm::vec3(0.0f, 0.0f, 1.0f));
+		glm::quat pitchQuat = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f)); 
+		glm::quat rotationQuat = yawQuat * pitchQuat;
+		glm::vec3 eulerAngles = glm::eulerAngles(rotationQuat);
+		float finalYaw = eulerAngles.z;
+		rotY = finalYaw; // If you want to keep rotation in radians
+	}
 
-		float yaw = atan2(cameraDirection.x, cameraDirection.z);
 
-		float degreesYaw = glm::degrees(yaw);
-
-		degreesYaw = fmod(degreesYaw, 360.0f);
-		if (degreesYaw < 0.0f) {
-			degreesYaw += 360.0f;
-		}
-
-		// Update rotation
-		rotY = degreesYaw;
-	}*/
 
 
 	void checkInputs(GLFWwindow* window, float delta, glm::vec3 direction) {
 		glm::vec3 horizontalDirection = glm::normalize(glm::vec3(direction.x, 0.0f, direction.z));
 
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			position += horizontalDirection * delta;
+			position += horizontalDirection * delta * 1.5f;
 
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position -= horizontalDirection * delta;
+			position -= horizontalDirection * delta * 1.5f;
 
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position -= glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta;
+			position -= glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta * 1.5f;
 
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position += glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta;
+			position += glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta * 1.5f;
 
 		}
 

@@ -17,6 +17,7 @@
 #include "ArcCamera.h"
 #include "physics/PhysXInitializer.h"
 
+
 #undef min
 #undef max
 
@@ -231,7 +232,7 @@ int main(int argc, char** argv) {
 
         // Initialize lights
         DirectionalLight dirL(glm::vec3(1.0f), glm::vec3(0.0f, -1.0f, -1.0f));
-        PointLight pointL(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f, 10.4f, 0.0f));
+        PointLight pointL(glm::vec3(player1.getPos()), glm::vec3(0.0f), glm::vec3(0.0f, 10.4f, 0.0f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -263,7 +264,8 @@ int main(int argc, char** argv) {
         double angle = 0.0f;
 
         glm::vec3 materialCoefficients = glm::vec3(0.1f, 0.7f, 0.1f);
-        float alpha = 8.0f;
+        float alpha = 1000.0f;
+        float prevAngle = 0.0f;
 
         while (!glfwWindowShouldClose(window)) {
             
@@ -283,15 +285,13 @@ int main(int argc, char** argv) {
             modelShader->setUniform("specularAlpha", alpha);
 
             player1.checkInputs(window, dt, camDir);
-            //player1.updateRotation(camDir);
-            /*if (camDir != prevCamDir) {
-                angle = player1.getRotY() * 0.00005f;
-                std::cout << angle << endl;
+            player1.updateRotation(camDir);
+            if (camDir != prevCamDir) {
+                angle = player1.getRotY() * 0.005f;
                 play = glm::rotate(play, float(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-            }*/
+            }
             play = glm::translate(play, player1.getPosition());
-
-            prevRotation = angle;
+ 
             prevCamDir = camDir;
 
             player1.Draw(modelShader);
@@ -380,7 +380,7 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos) {
 }
 
 void scroll_callback(GLFWwindow* window, double xOffset, double yOffset) {
-    camera.zoom(yOffset);
+    camera.zoom(yOffset / 2);
 }
 
 

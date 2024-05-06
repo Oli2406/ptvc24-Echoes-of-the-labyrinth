@@ -40,7 +40,7 @@ public:
 	mat4 calculateMatrix(float radius, float pitch, float yaw, Player& player) {
 		//compute camera Position with Euler Angles
 		float x = radius * sin(yaw) * cos(pitch) - player.getPos().x;
-		float y = radius * sin(pitch) + player.getPos().y;
+		float y = radius * sin(pitch) + player.getPos().y + 0.5f;
 		float z = radius * cos(yaw) * cos(pitch) + player.getPos().z;
 		vec3 position(-x, y, z);
 		pos = position;
@@ -88,6 +88,6 @@ public:
 	void zoom(float yoffset) {
 		//Calculate the zoom and limit it.
 		radius -= yoffset;
-		radius = glm::clamp(radius, 1.0f, 100.0f);
+		radius = glm::clamp(radius, 4.0f, 10.0f);
 	}
 };
