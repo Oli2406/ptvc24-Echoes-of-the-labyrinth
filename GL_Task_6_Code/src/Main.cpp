@@ -307,7 +307,7 @@ int main(int argc, char** argv) {
             modelShader->setUniform("specularAlpha", alpha);
 
             player1.checkInputs(window, dt, camDir);
-            player1.updateRotation(camDir);
+            //player1.updateRotation(camDir);
             if (camDir != prevCamDir) {
                 angle = player1.getRotY() * 0.005f;
                 //play = glm::rotate(play, float(angle), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -351,7 +351,7 @@ int main(int argc, char** argv) {
             torch.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
 
             scene->simulate(dt);
-            scene->fetchResults();
+            scene->fetchResults(true);
 
             sky->use();
             sky->setUniform("viewProjMatrix", viewProjectionMatrix);
