@@ -288,9 +288,9 @@ int main(int argc, char** argv) {
         glm::vec3 materialCoefficients = glm::vec3(0.1f, 0.7f, 0.1f);
         float alpha = 1.0f;
         float prevAngle = 0.0f;
-
+        int x = 1;
         while (!glfwWindowShouldClose(window)) {
-            
+            x++;
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             modelShader->use();
 
@@ -319,7 +319,7 @@ int main(int argc, char** argv) {
             player1.Draw(modelShader);
 
             // Setze die Position des Point Lights auf die Position des Fire-Objekts
-            PointLight pointL(glm::vec3(1.0f), player1.getPosition(), glm::vec3(1.0f, 0.4f, 0.1f));
+            PointLight pointL(glm::vec3(1.0f), player1.getPos() + glm::vec3(0.4f, 1.5f, 0.0f), glm::vec3(1.0f, 0.4f, 0.1f));
 
             // Set per-frame uniforms
             setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
