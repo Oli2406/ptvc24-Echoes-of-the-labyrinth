@@ -199,6 +199,10 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> modelShader = std::make_shared<Shader>("assets/shaders/model.vert", "assets/shaders/model.frag");
         std::shared_ptr<Shader> sky = std::make_shared<Shader>("assets/shaders/sky.vert", "assets/shaders/sky.frag");
 
+        // Create textures
+        std::shared_ptr<Texture> woodTexture = std::make_shared<Texture>("assets/textures/fire.dds");
+        std::shared_ptr<Texture> tileTexture = std::make_shared<Texture>("assets/textures/torch.dds");
+
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
         Model map(&path[0]);
         Skybox skybox;
