@@ -16,6 +16,7 @@
 #include "Player.h"
 #include "ArcCamera.h"
 #include "physics/PhysXInitializer.h"
+#include "Geometry.h"
 
 
 #undef min
@@ -205,8 +206,25 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> sky = std::make_shared<Shader>("assets/shaders/sky.vert", "assets/shaders/sky.frag");
 
         // Create textures
-        std::shared_ptr<Texture> woodTexture = std::make_shared<Texture>("assets/textures/fire.dds");
-        std::shared_ptr<Texture> tileTexture = std::make_shared<Texture>("assets/textures/torch.dds");
+        std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
+        std::shared_ptr<Texture> torchTexture = std::make_shared<Texture>("assets/textures/torch.dds");
+
+        // Create materials
+        std::shared_ptr<Material> fireTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.1f), 2.0f, fireTexture);
+        std::shared_ptr<Material> torchTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, torchTexture);
+
+        // Create geometry
+        Geometry fire = Geometry(
+           glm::translate(glm::mat4(1), glm::vec3(0, 2.5, 0)),
+            Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
+            fireTextureMaterial
+        );
+
+        Geometry torch = Geometry(
+            glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 0)), glm::vec3(1.0f, 3.0f, 1.0f)),
+            Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
+            torchTextureMaterial
+        );
 
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
         Model map(&path[0], physics, scene);
@@ -235,8 +253,8 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(1.0f), glm::vec3(0.0f, -1.0f, -1.0f));
-        PointLight pointL(glm::vec3(player1.getPos()), glm::vec3(0.0f), glm::vec3(0.0f, 10.4f, 0.0f));
+        DirectionalLight dirL(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+        //PointLight pointL(glm::vec3(1.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -268,7 +286,7 @@ int main(int argc, char** argv) {
         double angle = 0.0f;
 
         glm::vec3 materialCoefficients = glm::vec3(0.1f, 0.7f, 0.1f);
-        float alpha = 1000.0f;
+        float alpha = 1.0f;
         float prevAngle = 0.0f;
 
         while (!glfwWindowShouldClose(window)) {
@@ -292,7 +310,7 @@ int main(int argc, char** argv) {
             player1.updateRotation(camDir);
             if (camDir != prevCamDir) {
                 angle = player1.getRotY() * 0.005f;
-                play = glm::rotate(play, float(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+                //play = glm::rotate(play, float(angle), glm::vec3(0.0f, 1.0f, 0.0f));
             }
             play = glm::translate(play, player1.getPosition());
  
@@ -300,10 +318,12 @@ int main(int argc, char** argv) {
 
             player1.Draw(modelShader);
 
+            // Setze die Position des Point Lights auf die Position des Fire-Objekts
+            PointLight pointL(glm::vec3(1.0f), player1.getPosition(), glm::vec3(1.0f, 0.4f, 0.1f));
 
             // Set per-frame uniforms
             setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
-            setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
+            
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -317,6 +337,18 @@ int main(int argc, char** argv) {
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelDiamiond));
             diamond.Draw(modelShader);
+
+            setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
+            textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+
+            fire.draw();
+            torch.draw();
+
+            // Berechne die aktualisierte Position für fire und torch um 2 Einheiten höher als die Position von player1
+            glm::vec3 firePosition = player1.getPosition() + glm::vec3(0.4f, 1.5f, 0.0f);
+            glm::vec3 torchPosition = player1.getPosition() + glm::vec3(0.4f, 1.41f, 0.0f);
+            fire.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
+            torch.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
 
             scene->simulate(dt);
             scene->fetchResults();

@@ -101,10 +101,10 @@ vec3 fresnelSchlick (float cosTheta, vec3 F0) {
 void main() {	
 	vec3 n = normalize(vert.normal_world);
 	vec3 v = normalize(vert.position_world - camera_world);
-	vec3 R = normalize(clampedReflect(v, n));
-	vec3 reflectionColor = getCornellBoxReflectionColor(vert.position_world, R);
+	//vec3 R = normalize(clampedReflect(v, n));
+	//vec3 reflectionColor = getCornellBoxReflectionColor(vert.position_world, R);
 	vec3 F0 = vec3(0.1); // <-- some kind of plastic
-	vec3 reflectivity = fresnelSchlick(dot(n, -v), F0);
+	//vec3 reflectivity = fresnelSchlick(dot(n, -v), F0);
 
 	vec3 texColor = texture(diffuseTexture, vert.uv).rgb;
 	color = vec4(texColor * materialCoefficients.x, 1); // ambient
@@ -115,7 +115,9 @@ void main() {
 	// add point light contribution
 	color.rgb += phong(n, pointL.position - vert.position_world, -v, pointL.color * texColor, materialCoefficients.y, pointL.color, materialCoefficients.z, specularAlpha, true, pointL.attenuation);
 
-	color = vec4(mix(color.xyz, reflectionColor, reflectivity), 1.0f);
+	//color = vec4(mix(color.xyz, reflectionColor, reflectivity), 1.0f);
+
+	color = vec4(color.xyz, 1);
 
 	if (draw_normals) {
 		color.rgb = n;
