@@ -15,6 +15,8 @@
 #include "Skybox.h"
 #include "Player.h"
 #include "ArcCamera.h"
+#include "physics/PhysXInitializer.h"
+
 
 #undef min
 #undef max
@@ -56,6 +58,9 @@ Player player1;
 ArcCamera camera;
 bool firstMouse = true;
 static float PI = 3.14159265358979;
+
+PxPhysics* physics = PhysXInitializer::initializePhysX();
+PxScene* scene = PhysXInitializer::createPhysXScene(physics);
 
 /* --------------------------------------------- */
 // Main
@@ -204,20 +209,20 @@ int main(int argc, char** argv) {
         std::shared_ptr<Texture> tileTexture = std::make_shared<Texture>("assets/textures/torch.dds");
 
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
-        Model map(&path[0]);
+        Model map(&path[0], physics, scene);
         Skybox skybox;
 
         string path1 = gcgFindTextureFile("assets/geometry/podest/podest.obj");
-        Model podest(&path1[0]);
+        Model podest(&path1[0], physics, scene);
 
         string path2 = gcgFindTextureFile("assets/geometry/floor/floor.obj");
-        Model floor(&path2[0]);
+        Model floor(&path2[0], physics, scene);
 
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
-        Model diamond(&path3[0]);
+        Model diamond(&path3[0], physics, scene);
 
         string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.obj");
-        Model adventurer(&path4[0]);
+        Model adventurer(&path4[0], physics, scene);
 
         //diamond.printNormals();
 
@@ -231,7 +236,7 @@ int main(int argc, char** argv) {
 
         // Initialize lights
         DirectionalLight dirL(glm::vec3(1.0f), glm::vec3(0.0f, -1.0f, -1.0f));
-        PointLight pointL(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f, 10.4f, 0.0f));
+        PointLight pointL(glm::vec3(player1.getPos()), glm::vec3(0.0f), glm::vec3(0.0f, 10.4f, 0.0f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -240,13 +245,16 @@ int main(int argc, char** argv) {
 
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
+        model = glm::scale(model, glm::vec3(6.0f, 6.0f, 6.0f));
         GLint modelLoc = glGetUniformLocation(modelShader->getHandle(), "model");
-        float rotAngle = 0.3f;
 
         glm::mat4 modelDiamiond = glm::mat4(1.0f);
         modelDiamiond = glm::translate(modelDiamiond, glm::vec3(0.0f, 0.0f, 0.0f));
         modelDiamiond = glm::scale(modelDiamiond, glm::vec3(3.0f, 3.0f, 3.0f));
+
+        glm::mat4 podestModel = glm::mat4(1.0f);
+        podestModel = glm::translate(podestModel, glm::vec3(0.0f, 0.0f, 0.0f));
+        podestModel = glm::scale(podestModel, glm::vec3(3.0f, 3.0f, 3.0f));
 
         mat4 viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
         glm::vec3 camDir = camera.getPos();
@@ -260,7 +268,8 @@ int main(int argc, char** argv) {
         double angle = 0.0f;
 
         glm::vec3 materialCoefficients = glm::vec3(0.1f, 0.7f, 0.1f);
-        float alpha = 8.0f;
+        float alpha = 1000.0f;
+        float prevAngle = 0.0f;
 
         while (!glfwWindowShouldClose(window)) {
             
@@ -280,15 +289,13 @@ int main(int argc, char** argv) {
             modelShader->setUniform("specularAlpha", alpha);
 
             player1.checkInputs(window, dt, camDir);
-            //player1.updateRotation(camDir);
-            /*if (camDir != prevCamDir) {
-                angle = player1.getRotY() * 0.00005f;
-                std::cout << angle << endl;
+            player1.updateRotation(camDir);
+            if (camDir != prevCamDir) {
+                angle = player1.getRotY() * 0.005f;
                 play = glm::rotate(play, float(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-            }*/
+            }
             play = glm::translate(play, player1.getPosition());
-
-            prevRotation = angle;
+ 
             prevCamDir = camDir;
 
             player1.Draw(modelShader);
@@ -300,14 +307,19 @@ int main(int argc, char** argv) {
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-            map.Draw(modelShader);
-            podest.Draw(modelShader);
             floor.Draw(modelShader);
+            map.Draw(modelShader);
+
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(podestModel));
+            podest.Draw(modelShader);
 
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelDiamiond));
             diamond.Draw(modelShader);
+
+            scene->simulate(dt);
+            scene->fetchResults();
 
             sky->use();
             sky->setUniform("viewProjMatrix", viewProjectionMatrix);
@@ -372,7 +384,7 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos) {
 }
 
 void scroll_callback(GLFWwindow* window, double xOffset, double yOffset) {
-    camera.zoom(yOffset);
+    camera.zoom(yOffset / 2);
 }
 
 

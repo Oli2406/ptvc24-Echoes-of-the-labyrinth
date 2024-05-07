@@ -99,19 +99,31 @@ public:
         this->physics = physics;
         this->scene = scene;
 
+        cout << "Initializing Physics..." << endl;
+
         // Iterate over meshes and create PhysX static actors for collision detection
         for (GLuint i = 0; i < this->meshes.size(); i++)
         {
             PxTriangleMesh* triangleMesh = createTriangle(this->meshes[i]);
 
-            PxRigidStatic* staticActor = physics->createRigidStatic(PxTransform(PxIdentity));
-            PxShape* shape = physics->createShape(PxTriangleMeshGeometry(triangleMesh), *physics->createMaterial(0.5f, 0.5f, 0.1f));
-            staticActor->attachShape(*shape);
-            scene->addActor(*staticActor);
+            if (triangleMesh) {
+                cout << "Triangle mesh created successfully for mesh " << i << endl;
 
-            this->physxActors.push_back(staticActor);
+                PxRigidStatic* staticActor = physics->createRigidStatic(PxTransform(PxIdentity));
+                PxShape* shape = physics->createShape(PxTriangleMeshGeometry(triangleMesh), *physics->createMaterial(0.5f, 0.5f, 0.1f));
+                staticActor->attachShape(*shape);
+                scene->addActor(*staticActor);
+
+                this->physxActors.push_back(staticActor);
+
+                cout << "PhysX static actor added for mesh " << i << endl;
+            }
+            else {
+                cout << "Failed to create triangle mesh for mesh " << i << endl;
+            }
         }
     }
+
 
 
 private:
@@ -125,7 +137,7 @@ private:
             // The node object only contains indices to index the actual objects in the scene.
             // The scene contains all the data, node is just to keep stuff organized (like relations between nodes).
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            cout << "Successfully loaded " << mesh->mNumVertices << " vertices" << endl;
+            
             this->meshes.push_back( this->processMesh( mesh, scene ) );
         }
         
@@ -242,10 +254,18 @@ private:
 
         PxTriangleMesh* triangleMesh = PxCreateTriangleMesh(cookingParams, meshDesc);
 
+        if (triangleMesh) {
+            cout << "Triangle mesh created successfully" << endl;
+        }
+        else {
+            cout << "Failed to create triangle mesh" << endl;
+        }
+
         delete[] pxVertices;
 
         return triangleMesh;
     }
+
     
     // Checks all material textures of a given type and loads the textures if they're not loaded yet.
     // The required info is returned as a Texture struct.
