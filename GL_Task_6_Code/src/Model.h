@@ -60,7 +60,7 @@ private:
     vector<Text> textures_loaded;	// Stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
     PxPhysics* physics;
     PxScene* scene;
-    vector<PxRigidStatic*> physxActors;
+    vector<PxRigidDynamic*> physxActors;
     
 public:
 
@@ -101,7 +101,6 @@ public:
 
         cout << "Initializing Physics..." << endl;
 
-        // Iterate over meshes and create PhysX static actors for collision detection
         for (GLuint i = 0; i < this->meshes.size(); i++)
         {
             PxTriangleMesh* triangleMesh = createTriangle(this->meshes[i]);
@@ -109,20 +108,34 @@ public:
             if (triangleMesh) {
                 cout << "Triangle mesh created successfully for mesh " << i << endl;
 
-                PxRigidStatic* staticActor = physics->createRigidStatic(PxTransform(PxIdentity));
-                PxShape* shape = physics->createShape(PxTriangleMeshGeometry(triangleMesh), *physics->createMaterial(0.5f, 0.5f, 0.1f));
-                staticActor->attachShape(*shape);
-                scene->addActor(*staticActor);
+                PxTransform transform(PxIdentity);
 
-                this->physxActors.push_back(staticActor);
+                PxVec3 initialPosition(0.0f, 0.0f, 0.0f);
+                PxVec3 initialVelocity(0.0f, 0.0f, 0.0f);
 
-                cout << "PhysX static actor added for mesh " << i << endl;
+                PxRigidDynamic* dynamicActor = createDynamic(transform, PxTriangleMeshGeometry(triangleMesh), physics, physics->createMaterial(0.5f, 0.5f, 0.1f), scene, initialVelocity);
+
+                this->physxActors.push_back(dynamicActor);
+
+                cout << "PhysX dynamic actor added for mesh " << i << endl;
             }
             else {
                 cout << "Failed to create triangle mesh for mesh " << i << endl;
             }
         }
     }
+
+
+    PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geometry, PxPhysics* physics, PxMaterial* material, PxScene* scene, const PxVec3& velocity = PxVec3(0)) {
+        PxRigidDynamic* dynamic = physics->createRigidDynamic(t);
+        PxShape* shape = physics->createShape(geometry, *material);
+        dynamic->attachShape(*shape);
+        dynamic->setAngularDamping(0.5f);
+        dynamic->setLinearVelocity(velocity);
+        scene->addActor(*dynamic);
+        return dynamic;
+    }
+
 
 
 
