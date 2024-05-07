@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
 
         // Initialize lights
         DirectionalLight dirL(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, -1.0f));
-        //PointLight pointL(glm::vec3(1.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
+        PointLight pointL(glm::vec3(1.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -319,7 +319,7 @@ int main(int argc, char** argv) {
             player1.Draw(modelShader);
 
             // Setze die Position des Point Lights auf die Position des Fire-Objekts
-            PointLight pointL(glm::vec3(1.0f), player1.getPos() + glm::vec3(0.4f, 1.5f, 0.0f), glm::vec3(1.0f, 0.4f, 0.1f));
+            //PointLight pointL(glm::vec3(1.0f), player1.getPos() + glm::vec3(0.4f, 1.5f, 0.0f), glm::vec3(1.0f, 0.4f, 0.1f));
 
             // Set per-frame uniforms
             setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
@@ -349,6 +349,8 @@ int main(int argc, char** argv) {
             glm::vec3 torchPosition = player1.getPosition() + glm::vec3(0.4f, 1.41f, 0.0f);
             fire.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
             torch.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
+
+            pointL.position = player1.getPos() + glm::vec3(0.4f, 1.5f, 0.0f);
 
             scene->simulate(dt);
             scene->fetchResults(true);
