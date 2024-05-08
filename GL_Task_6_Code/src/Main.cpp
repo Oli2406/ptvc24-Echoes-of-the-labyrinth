@@ -261,6 +261,9 @@ int main(int argc, char** argv) {
         float t_sum = 0.0f;
         float dt = 0.0f;
 
+        GLint diffuseLocation = glGetUniformLocation(modelShader->getHandle(), "texture_diffuse");
+        GLint skyLocation = glGetUniformLocation(modelShader->getHandle(), "skybox");
+
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         model = glm::scale(model, glm::vec3(6.0f, 6.0f, 6.0f));
@@ -293,6 +296,9 @@ int main(int argc, char** argv) {
             x++;
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             modelShader->use();
+
+            modelShader->setUniform(diffuseLocation, 0);
+            modelShader->setUniform(skyLocation, 1);
 
             glfwPollEvents();
 
@@ -331,6 +337,7 @@ int main(int argc, char** argv) {
             map.Draw(modelShader);
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(podestModel));
+
             podest.Draw(modelShader);
 
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
