@@ -11,6 +11,8 @@ uniform sampler2D texture_diffuse;
 uniform vec3 materialCoefficients; // x = ambient, y = diffuse, z = specular 
 uniform float specularAlpha;
 
+uniform samplerCube skybox;
+
 uniform bool draw_texcoords;
 uniform bool draw_normals;
 
@@ -34,15 +36,28 @@ vec3 phong(vec3 n, vec3 l, vec3 v, vec3 diffuseC, float diffuseF, vec3 specularC
 	return (diffuseF * diffuseC * max(0, dot(n, l)) + specularF * specularC * pow(max(0, dot(r, v)), alpha)) * att; 
 }
 
+float computeFresnelReflectance(float reflectionCoefficient, float cosTheta) {
+    float r0 = reflectionCoefficient;
+    return r0 + (1.0 - r0) * pow(1.0 - cosTheta, 5.0);
+}
+
 void main() {
     vec3 n = normalize(out_normals);
 	vec3 v = normalize(position_world - camera_world);
 	
 	vec3 F0 = vec3(0.1); // <-- some kind of plastic
-	
+
+	float cosTheta = abs(dot(-v, n));
+	float reflectionCoefficient = 1;
+	float reflectance = computeFresnelReflectance(reflectionCoefficient, cosTheta);
 
 	vec3 texColor = texture(texture_diffuse, TexCoords).rgb;
 	color = vec4(texColor * materialCoefficients.x, 1); // ambient
+
+	vec3 I = normalize(position_world - camera_world);
+    vec3 R = reflect(I, normalize(n));
+	vec3 reflectedColor = texture(skybox, R).rgb;
+	color.rgb = mix(color.rgb, reflectedColor, 1.0f); //änder das mal auf 0.3f dann siehst du den bug
 	
 	// add directional light contribution
 	color.rgb += phong(n, -dirL.direction, -v, dirL.color * texColor, materialCoefficients.y, dirL.color, materialCoefficients.z, specularAlpha, false, vec3(0));
