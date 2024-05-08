@@ -108,6 +108,12 @@ class Geometry {
      */
     void transform(glm::mat4 transformation);
 
+    // updates the modelmatrix
+    void Geometry::updateModelMatrix(glm::mat4 newModelMatrix);
+
+    // returns modelmatrix
+    glm::mat4 Geometry::getModelMatrix() const;
+
     /*!
      * Resets the model matrix to the identity matrix
      */

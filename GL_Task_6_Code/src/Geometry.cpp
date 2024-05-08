@@ -3,12 +3,12 @@
  * Institute of Computer Graphics and Algorithms.
  * This file is part of the GCG Lab Framework and must not be redistributed.
 */
-/*
+
 #include "Geometry.h"
 
 #undef min
-#undef max*/
-/*
+#undef max
+
 Geometry::Geometry(glm::mat4 modelMatrix, const GeometryData& data, std::shared_ptr<Material> material)
     : elements{static_cast<unsigned int>(data.indices.size())}
     , modelMatrix{modelMatrix}
@@ -79,6 +79,13 @@ void Geometry::draw() {
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, elements, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+}
+glm::mat4 Geometry::getModelMatrix() const {
+    return modelMatrix;
+}
+
+void Geometry::updateModelMatrix(glm::mat4 newModelMatrix) {
+    modelMatrix = newModelMatrix;
 }
 
 void Geometry::transform(glm::mat4 transformation) { modelMatrix = transformation * modelMatrix; }
@@ -162,10 +169,10 @@ GeometryData Geometry::createCubeGeometry(float width, float height, float depth
 		glm::vec2(1, 1),
 		glm::vec2(0, 1),
 		// back
-		glm::vec2(1, 1),
-		glm::vec2(0, 1),
-		glm::vec2(0, 0),
-		glm::vec2(1, 0),
+        glm::vec2(0, 0),
+        glm::vec2(1, 0),
+        glm::vec2(1, 1),
+        glm::vec2(0, 1),
 		// right
 		glm::vec2(0, 0),
 		glm::vec2(1, 0),
@@ -576,6 +583,5 @@ GeometryData Geometry::createSphereGeometry(unsigned int longitudeSegments, unsi
 
     return data;
 }
-*/
 
 

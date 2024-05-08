@@ -88,6 +88,6 @@ public:
 	void zoom(float yoffset) {
 		//Calculate the zoom and limit it.
 		radius -= yoffset;
-		radius = glm::clamp(radius, 4.0f, 10.0f);
+		radius = glm::clamp(radius, 0.0f, 100.0f);
 	}
 };
