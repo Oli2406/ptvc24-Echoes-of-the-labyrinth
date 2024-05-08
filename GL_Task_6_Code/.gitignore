@@ -37,12 +37,6 @@
 **/test/
 **/_project/
 
-# Prebuild files and assets
-assets/textures/
-assets/settings/
-lib/
-include/
-
 # Source Code
 *.ilk
 *.pdb

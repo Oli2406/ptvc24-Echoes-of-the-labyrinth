@@ -341,8 +341,8 @@ int main(int argc, char** argv) {
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
             textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
 
-            fire.draw();
-            torch.draw();
+            //fire.draw();
+            //torch.draw();
 
             // Berechne die aktualisierte Position für fire und torch um 2 Einheiten höher als die Position von player1
             glm::vec3 firePosition = player1.getPosition() + glm::vec3(0.4f, 1.5f, 0.0f);

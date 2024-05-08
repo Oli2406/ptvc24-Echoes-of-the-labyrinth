@@ -53,11 +53,6 @@ void main() {
 
 	vec3 texColor = texture(texture_diffuse, TexCoords).rgb;
 	color = vec4(texColor * materialCoefficients.x, 1); // ambient
-
-	vec3 I = normalize(position_world - camera_world);
-    vec3 R = reflect(I, normalize(n));
-	vec3 reflectedColor = texture(skybox, R).rgb;
-	color.rgb = mix(color.rgb, reflectedColor, 1.0f); //änder das mal auf 0.3f dann siehst du den bug
 	
 	// add directional light contribution
 	color.rgb += phong(n, -dirL.direction, -v, dirL.color * texColor, materialCoefficients.y, dirL.color, materialCoefficients.z, specularAlpha, false, vec3(0));
@@ -65,7 +60,10 @@ void main() {
 	// add point light contribution
 	color.rgb += phong(n, pointL.position - position_world, -v, pointL.color * texColor, materialCoefficients.y, pointL.color, materialCoefficients.z, specularAlpha, true, pointL.attenuation);
 
-	color = vec4(color.xyz, 1.0);
+	vec3 I = normalize(position_world - camera_world);
+    vec3 R = reflect(I, normalize(n));
+	vec3 reflectedColor = texture(skybox, R).rgb;
+	color = vec4(mix(color.rgb, reflectedColor, 1.0f), 1.0f);
 
 	if (draw_normals) {
 		color.rgb = n;
