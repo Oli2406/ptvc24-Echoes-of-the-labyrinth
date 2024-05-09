@@ -57,7 +57,7 @@ void main() {
 	vec3 I = normalize(position_world - camera_world);
     vec3 R = reflect(I, normalize(n));
 	vec3 reflectedColor = texture(skybox, R).rgb;
-	color.rgb = mix(color.rgb, reflectedColor, 1.0f); //änder das mal auf 0.3f dann siehst du den bug
+	//color.rgb = mix(color.rgb, reflectedColor, 0.3f); //änder das mal auf 0.3f dann siehst du den bug
 	
 	// add directional light contribution
 	color.rgb += phong(n, -dirL.direction, -v, dirL.color * texColor, materialCoefficients.y, dirL.color, materialCoefficients.z, specularAlpha, false, vec3(0));

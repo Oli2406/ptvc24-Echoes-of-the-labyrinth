@@ -41,6 +41,38 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos);
 void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& dirL, PointLight& pointL);
 
+// renderQuad() renders a 1x1 XY quad in NDC
+// -----------------------------------------
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+    if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+            // positions        // texture Coords
+            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+}
+
+
 /* --------------------------------------------- */
 // Global variables
 /* --------------------------------------------- */
@@ -200,18 +232,20 @@ int main(int argc, char** argv) {
     /* --------------------------------------------- */
     {
         // Load shader(s)
-        std::shared_ptr<Shader> cornellShader = std::make_shared<Shader>("assets/shaders/cornellGouraud.vert", "assets/shaders/cornellGouraud.frag");
+        std::shared_ptr<Shader> depthShader = std::make_shared<Shader>("assets/shaders/depthShader.vert", "assets/shaders/depthShader.frag");
         std::shared_ptr<Shader> textureShader = std::make_shared<Shader>("assets/shaders/texture.vert", "assets/shaders/texture.frag");
         std::shared_ptr<Shader> modelShader = std::make_shared<Shader>("assets/shaders/model.vert", "assets/shaders/model.frag");
         std::shared_ptr<Shader> sky = std::make_shared<Shader>("assets/shaders/sky.vert", "assets/shaders/sky.frag");
-
+        std::shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>("assets/shaders/debugDepthQuad.vert", "assets/shaders/debugDepthQuad.frag");
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
         std::shared_ptr<Texture> torchTexture = std::make_shared<Texture>("assets/textures/torch.dds");
+        std::shared_ptr<Texture> quadTexture = std::make_shared<Texture>("assets/textures/white.dds");
 
         // Create materials
         std::shared_ptr<Material> fireTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.1f), 2.0f, fireTexture);
         std::shared_ptr<Material> torchTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, torchTexture);
+        std::shared_ptr<Material> quadTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, quadTexture);
 
         // Create geometry
         Geometry fire = Geometry(
@@ -243,8 +277,7 @@ int main(int argc, char** argv) {
         Model adventurer(&path4[0], physics, scene);
 
         //diamond.printNormals();
-
-
+ 
         //Physics simulation;
 
         player1.set(adventurer, glm::vec3(0.0f, 0.0f, 0.0f), 0, 0, 0, 1);
@@ -253,7 +286,7 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+        DirectionalLight dirL(glm::vec3(1.0f), glm::vec3(0.0f, -1.0f, -1.0f));
         PointLight pointL(glm::vec3(1.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
@@ -288,11 +321,79 @@ int main(int argc, char** argv) {
         glm::vec3 materialCoefficients = glm::vec3(0.1f, 0.7f, 0.1f);
         float alpha = 1.0f;
         float prevAngle = 0.0f;
-        int x = 1;
+
+        // Shadow map
+
+        GLuint depthMapFBO;
+        glGenFramebuffers(1, &depthMapFBO);
+
+        const GLuint SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 1024;
+
+        GLuint depthMap;
+        glGenTextures(1, &depthMap);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        debugDepthQuad->use();
+        glUniform1i(glGetUniformLocation(debugDepthQuad->getHandle(), "depthMap"), 0);
+
+        glm::vec3 lightPos(0.0f, -1.0f, -1.0f);
+        
         while (!glfwWindowShouldClose(window)) {
-            x++;
+
+
+            // render
+            // ------
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            modelShader->use();
+
+            glfwPollEvents();
+
+            // 1. render depth of scene to texture (from light's perspective)
+        // --------------------------------------------------------------
+            glm::mat4 lightProjection, lightView;
+            glm::mat4 lightSpaceMatrix;
+            float near_plane = 1.0f, far_plane = 7.5f;
+            lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+            lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+            lightSpaceMatrix = lightProjection * lightView;
+            depthShader->use();
+            glUniformMatrix4fv(glGetUniformLocation(depthShader->getHandle(), "lightSpaceMatrix"), 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+
+            glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+            glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+            glClear(GL_DEPTH_BUFFER_BIT);
+            depthShader->setUniform("model", play);
+            torch.draw();
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+            // reset viewport
+            glViewport(0, 0, window_width, window_height);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // render Depth map to quad for visual debugging
+            // ---------------------------------------------
+            debugDepthQuad->use();
+            debugDepthQuad->setUniform("near_plane", near_plane);
+            debugDepthQuad->setUniform("far_plane", far_plane);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, depthMap);
+            renderQuad();
+
+            /*modelShader->use();
 
             glfwPollEvents();
 
@@ -305,6 +406,7 @@ int main(int argc, char** argv) {
             modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
             modelShader->setUniform("materialCoefficients", materialCoefficients);
             modelShader->setUniform("specularAlpha", alpha);
+            modelShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
 
             player1.checkInputs(window, dt, camDir);
             //player1.updateRotation(camDir);
@@ -316,10 +418,7 @@ int main(int argc, char** argv) {
  
             prevCamDir = camDir;
 
-            player1.Draw(modelShader);
-
-            // Setze die Position des Point Lights auf die Position des Fire-Objekts
-            //PointLight pointL(glm::vec3(1.0f), player1.getPos() + glm::vec3(0.4f, 1.5f, 0.0f), glm::vec3(1.0f, 0.4f, 0.1f));
+            //player1.Draw(modelShader);
 
             // Set per-frame uniforms
             setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
@@ -327,22 +426,22 @@ int main(int argc, char** argv) {
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-            floor.Draw(modelShader);
-            map.Draw(modelShader);
+            //floor.Draw(modelShader);
+            //map.Draw(modelShader);
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(podestModel));
-            podest.Draw(modelShader);
+            //podest.Draw(modelShader);
 
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelDiamiond));
-            diamond.Draw(modelShader);
+            //diamond.Draw(modelShader);
 
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
             textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
 
-            fire.draw();
-            torch.draw();
+            //fire.draw();
+            //torch.draw();
 
             // Berechne die aktualisierte Position für fire und torch um 2 Einheiten höher als die Position von player1
             glm::vec3 firePosition = player1.getPosition() + glm::vec3(0.4f, 1.5f, 0.0f);
@@ -355,10 +454,10 @@ int main(int argc, char** argv) {
             scene->simulate(dt);
             scene->fetchResults(true);
 
-            sky->use();
-            sky->setUniform("viewProjMatrix", viewProjectionMatrix);
-            skybox.draw();
-
+            //sky->use();
+            //sky->setUniform("viewProjMatrix", viewProjectionMatrix);
+            //skybox.draw();
+            */
             // Compute frame time
             dt = t;
             t = float(glfwGetTime());

@@ -129,6 +129,14 @@ class Geometry {
     static GeometryData createCubeGeometry(float width, float height, float depth);
 
     /*!
+     * Creates a quad geometry
+     * @param width: width of the quad
+     * @param height: height of the quad
+     * @return all quad data
+     */
+    static GeometryData createQuadGeometry(float width, float height);
+
+    /*!
      *	Creates a cornell box geometry with vertex color attribute
      *	@param width		width of the box
      *	@param height		height of the box
