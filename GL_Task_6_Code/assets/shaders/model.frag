@@ -63,7 +63,7 @@ void main() {
 	vec3 I = normalize(position_world - camera_world);
     vec3 R = reflect(I, normalize(n));
 	vec3 reflectedColor = texture(skybox, R).rgb;
-	color = vec4(mix(color.rgb, reflectedColor, 0.01f), 1.0f); //hier ändern wenn du mehr reflektion willst
+	color = vec4(mix(color.rgb, reflectedColor, 0.1f), 1.0f); //hier ändern wenn du mehr reflektion willst
 
 	if (draw_normals) {
 		color.rgb = n;
