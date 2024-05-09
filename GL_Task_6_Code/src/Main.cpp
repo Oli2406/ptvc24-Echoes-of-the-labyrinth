@@ -200,7 +200,7 @@ int main(int argc, char** argv) {
     /* --------------------------------------------- */
     {
         // Load shader(s)
-        std::shared_ptr<Shader> cornellShader = std::make_shared<Shader>("assets/shaders/cornellGouraud.vert", "assets/shaders/cornellGouraud.frag");
+        std::shared_ptr<Shader> depthShader = std::make_shared<Shader>("assets/shaders/depthShader.vert", "assets/shaders/depthShader.frag");
         std::shared_ptr<Shader> textureShader = std::make_shared<Shader>("assets/shaders/texture.vert", "assets/shaders/texture.frag");
         std::shared_ptr<Shader> modelShader = std::make_shared<Shader>("assets/shaders/model.vert", "assets/shaders/model.frag");
         std::shared_ptr<Shader> sky = std::make_shared<Shader>("assets/shaders/sky.vert", "assets/shaders/sky.frag");
@@ -253,7 +253,7 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+        DirectionalLight dirL(glm::vec3(1.0f), glm::vec3(0.0f, -1.0f, -1.0f));
         PointLight pointL(glm::vec3(1.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
@@ -291,9 +291,7 @@ int main(int argc, char** argv) {
         glm::vec3 materialCoefficients = glm::vec3(0.1f, 0.7f, 0.1f);
         float alpha = 1.0f;
         float prevAngle = 0.0f;
-        int x = 1;
         while (!glfwWindowShouldClose(window)) {
-            x++;
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             modelShader->use();
 

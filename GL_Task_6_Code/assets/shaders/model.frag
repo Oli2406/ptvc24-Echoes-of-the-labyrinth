@@ -53,14 +53,6 @@ void main() {
 
 	vec3 texColor = texture(texture_diffuse, TexCoords).rgb;
 	color = vec4(texColor * materialCoefficients.x, 1); // ambient
-<<<<<<< HEAD
-
-	vec3 I = normalize(position_world - camera_world);
-    vec3 R = reflect(I, normalize(n));
-	vec3 reflectedColor = texture(skybox, R).rgb;
-	//color.rgb = mix(color.rgb, reflectedColor, 0.3f); //änder das mal auf 0.3f dann siehst du den bug
-=======
->>>>>>> 25a58b6bb22ca4012887063d69fce5aa27329da3
 	
 	// add directional light contribution
 	color.rgb += phong(n, -dirL.direction, -v, dirL.color * texColor, materialCoefficients.y, dirL.color, materialCoefficients.z, specularAlpha, false, vec3(0));
@@ -71,7 +63,7 @@ void main() {
 	vec3 I = normalize(position_world - camera_world);
     vec3 R = reflect(I, normalize(n));
 	vec3 reflectedColor = texture(skybox, R).rgb;
-	color = vec4(mix(color.rgb, reflectedColor, 0.1f), 1.0f); //hier ändern wenn du mehr reflektion willst
+	color = vec4(mix(color.rgb, reflectedColor, 0.01f), 1.0f); //hier ändern wenn du mehr reflektion willst
 
 	if (draw_normals) {
 		color.rgb = n;
