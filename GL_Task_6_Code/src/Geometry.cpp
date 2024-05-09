@@ -92,38 +92,6 @@ void Geometry::transform(glm::mat4 transformation) { modelMatrix = transformatio
 
 void Geometry::resetModelMatrix() { modelMatrix = glm::mat4(1); }
 
-GeometryData Geometry::createQuadGeometry(float width, float height) {
-    GeometryData data;
-
-    data.positions = {
-        glm::vec3(-width / 2.0f, -height / 2.0f, 0.0f),
-        glm::vec3(width / 2.0f, -height / 2.0f, 0.0f),
-        glm::vec3(width / 2.0f, height / 2.0f, 0.0f),
-        glm::vec3(-width / 2.0f, height / 2.0f, 0.0f)
-    };
-
-    data.normals = {
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f)
-    };
-
-    data.uvs = {
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(1.0f, 0.0f),
-        glm::vec2(1.0f, 1.0f),
-        glm::vec2(0.0f, 1.0f)
-    };
-
-    data.indices = {
-        0, 1, 2,
-        2, 3, 0
-    };
-    // clang-format on
-    return data;
-}
-
 GeometryData Geometry::createCubeGeometry(float width, float height, float depth) {
     GeometryData data;
 

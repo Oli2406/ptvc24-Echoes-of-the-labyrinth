@@ -22,7 +22,7 @@
 *.lai
 *.la
 *.a
-*.lib
+
 
 # Executables
 **/bin/
@@ -36,12 +36,6 @@
 **/cmake-build-release/
 **/test/
 **/_project/
-
-# Prebuild files and assets
-assets/textures/
-assets/settings/
-lib/
-include/
 
 # Source Code
 *.ilk
