@@ -3,11 +3,16 @@
 in vec3 out_normals;
 in vec3 position_world;
 in vec2 TexCoords;
+in vec4 FragPosLightSpace;
 
 out vec4 color;
 
 uniform vec3 camera_world;
+uniform vec3 lightPos;
+
 uniform sampler2D texture_diffuse;
+uniform sampler2D shadowMap;
+
 uniform vec3 materialCoefficients; // x = ambient, y = diffuse, z = specular 
 uniform float specularAlpha;
 
@@ -41,6 +46,28 @@ float computeFresnelReflectance(float reflectionCoefficient, float cosTheta) {
     return r0 + (1.0 - r0) * pow(1.0 - cosTheta, 5.0);
 }
 
+float ShadowCalculation(float dotLightNormal)
+{
+    vec3 pos = FragPosLightSpace.xyz * 0.5 + 0.5;
+    if(pos.z > 1.0){
+        pos.z = 1.0;
+    }
+    float depth = texture(shadowMap, pos.xy).r;
+    float bias = max(0.05 * (1.0 - dotLightNormal), 0.005);
+    
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float depth = texture(shadowMap, pos.xy + vec2(x, y) * texelSize).r; 
+            shadow += (depth + bias) < pos.z ? 0.0 : 1.0;    
+        }    
+    }
+    return shadow / 9.0;
+ }
+
 void main() {
     vec3 n = normalize(out_normals);
 	vec3 v = normalize(position_world - camera_world);
@@ -52,18 +79,27 @@ void main() {
 	float reflectance = computeFresnelReflectance(reflectionCoefficient, cosTheta);
 
 	vec3 texColor = texture(texture_diffuse, TexCoords).rgb;
-	color = vec4(texColor * materialCoefficients.x, 1); // ambient
+	vec3 ambient = texColor * materialCoefficients.x; // ambient
 	
 	// add directional light contribution
-	color.rgb += phong(n, -dirL.direction, -v, dirL.color * texColor, materialCoefficients.y, dirL.color, materialCoefficients.z, specularAlpha, false, vec3(0));
+	vec3 direct = phong(n, -dirL.direction, -v, dirL.color * texColor, materialCoefficients.y, dirL.color, materialCoefficients.z, specularAlpha, false, vec3(0));
 			
 	// add point light contribution
-	color.rgb += phong(n, pointL.position - position_world, -v, pointL.color * texColor, materialCoefficients.y, pointL.color, materialCoefficients.z, specularAlpha, true, pointL.attenuation);
+	vec3 point = phong(n, pointL.position - position_world, -v, pointL.color * texColor, materialCoefficients.y, pointL.color, materialCoefficients.z, specularAlpha, true, pointL.attenuation);
 
 	vec3 I = normalize(position_world - camera_world);
     vec3 R = reflect(I, normalize(n));
 	vec3 reflectedColor = texture(skybox, R).rgb;
-	color = vec4(mix(color.rgb, reflectedColor, 0.1f), 1.0f); //hier ändern wenn du mehr reflektion willst
+	texColor = mix(texColor, reflectedColor, 0.3f); //hier ändern wenn du mehr reflektion willst
+
+	float dotLightNormal = dot(normalize(lightPos - position_world), n); // float dotLightNormal = dot(-dirL.direction, n);
+
+	// calculate shadow
+    float shadow = ShadowCalculation(dotLightNormal); 
+
+	texColor = (ambient + (shadow) * (direct + point)) * texColor;
+
+	 color = vec4(texColor, 1.0);
 
 	if (draw_normals) {
 		color.rgb = n;
