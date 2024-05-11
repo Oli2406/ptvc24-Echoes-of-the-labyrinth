@@ -8,7 +8,6 @@ in vec4 FragPosLightSpace;
 out vec4 color;
 
 uniform vec3 camera_world;
-uniform vec3 lightPos;
 
 uniform sampler2D texture_diffuse;
 uniform sampler2D shadowMap;
@@ -62,7 +61,7 @@ float ShadowCalculation(float dotLightNormal)
         for(int y = -1; y <= 1; ++y)
         {
             float depth = texture(shadowMap, pos.xy + vec2(x, y) * texelSize).r; 
-            shadow += (depth + bias) < pos.z ? 0.0 : 1.0;    
+            shadow += (depth + bias) < pos.z ? 0.3 : 1.0;    
         }    
     }
     return shadow / 9.0;
@@ -92,12 +91,12 @@ void main() {
 	vec3 reflectedColor = texture(skybox, R).rgb;
 	texColor = mix(texColor, reflectedColor, 0.1f); //hier ändern wenn du mehr reflektion willst
 
-	float dotLightNormal = dot(normalize(lightPos - position_world), n); // float dotLightNormal = dot(-dirL.direction, n);
+	float dotLightNormal = dot(-dirL.direction, n);
 
 	// calculate shadow
     float shadow = ShadowCalculation(dotLightNormal); 
 
-	texColor = (ambient + (shadow) * (direct + point)) * texColor;
+	texColor = (ambient + ((shadow) * (direct + point))) * texColor;
 
 	 color = vec4(texColor, 1.0);
 

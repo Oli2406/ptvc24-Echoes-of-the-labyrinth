@@ -238,6 +238,8 @@ int main(int argc, char** argv) {
         // Create materials
         std::shared_ptr<Material> fireTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.1f), 2.0f, fireTexture);
         std::shared_ptr<Material> torchTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, torchTexture);
+        std::shared_ptr<Material> fireShadow = std::make_shared<TextureMaterial>(depthShader, glm::vec3(0.1f, 0.7f, 0.1f), 2.0f, fireTexture);
+        std::shared_ptr<Material> torchShadow = std::make_shared<TextureMaterial>(depthShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, torchTexture);
 
         // Create geometry
         Geometry fire = Geometry(
@@ -250,6 +252,18 @@ int main(int argc, char** argv) {
             glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 0)), glm::vec3(1.0f, 3.0f, 1.0f)),
             Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
             torchTextureMaterial
+        );
+
+        Geometry fireShad = Geometry(
+            glm::translate(glm::mat4(1), glm::vec3(0, 2.5, 0)),
+            Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
+            fireShadow
+        );
+
+        Geometry torchShad = Geometry(
+            glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 0)), glm::vec3(1.0f, 3.0f, 1.0f)),
+            Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
+            torchShadow
         );
 
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
@@ -279,7 +293,7 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(-1.0f, 5.0f, -1.0f));
+        DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(0.0f, -1.0f, -1.0f));
         PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
@@ -340,6 +354,8 @@ int main(int argc, char** argv) {
 
         // shader configuration
         // --------------------
+        textureShader->use();
+        textureShader->setUniform("shadowMap", 2);
         modelShader->use();
         modelShader->setUniform("texture_diffuse", 0);
         modelShader->setUniform("skybox", 1);
@@ -349,10 +365,9 @@ int main(int argc, char** argv) {
 
         // lighting info
         // -------------
-        glm::vec3 lightPos(-1.0f, 5.0f, -1.0f);
+        glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
         while (!glfwWindowShouldClose(window)) {
-            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glm::mat4 lightProjection, lightView;
@@ -368,16 +383,19 @@ int main(int argc, char** argv) {
             glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
             glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
             glClear(GL_DEPTH_BUFFER_BIT);
+
+            fireShad.draw();
+            torchShad.draw();
             
-            depthShader->setUniform("model", play);
+            depthShader->setUniform("modelMatrix", play);
             player1.Draw(depthShader);
-            depthShader->setUniform("model", model);
+            depthShader->setUniform("modelMatrix", model);
             floor.Draw(depthShader);
             map.Draw(depthShader);
-            depthShader->setUniform("model", podestModel);
+            depthShader->setUniform("modelMatrix", podestModel);
             podest.Draw(depthShader);
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-            depthShader->setUniform("model", modelDiamiond);
+            depthShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(depthShader);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -401,7 +419,6 @@ int main(int argc, char** argv) {
             modelShader->setUniform("specularAlpha", alpha);
             // Set per-frame uniforms
             setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
-            modelShader->setUniform("lightPos", lightPos);
             modelShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
 
             glActiveTexture(GL_TEXTURE2);
@@ -438,6 +455,7 @@ int main(int argc, char** argv) {
             
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
             textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+            textureShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
 
             fire.draw();
             torch.draw();
@@ -447,6 +465,9 @@ int main(int argc, char** argv) {
             glm::vec3 torchPosition = player1.getPosition() + glm::vec3(0.4f, 1.41f, 0.0f);
             fire.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
             torch.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
+
+            fireShad.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
+            torchShad.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
 
             pointL.position = player1.getPos() + glm::vec3(0.4f, 1.5f, 0.0f);
             
