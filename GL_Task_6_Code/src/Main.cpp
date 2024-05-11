@@ -279,21 +279,17 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(0.0f, -1.0f, -1.0f));
-        PointLight pointL(glm::vec3(5.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
+        DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(-1.0f, 5.0f, -1.0f));
+        PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
         float t = float(glfwGetTime());
         float t_sum = 0.0f;
         float dt = 0.0f;
 
-        GLint diffuseLocation = glGetUniformLocation(modelShader->getHandle(), "texture_diffuse");
-        GLint skyLocation = glGetUniformLocation(modelShader->getHandle(), "skybox");
-
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         model = glm::scale(model, glm::vec3(6.0f, 6.0f, 6.0f));
-        GLint modelLoc = glGetUniformLocation(modelShader->getHandle(), "model");
 
         glm::mat4 modelDiamiond = glm::mat4(1.0f);
         modelDiamiond = glm::translate(modelDiamiond, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -353,14 +349,12 @@ int main(int argc, char** argv) {
 
         // lighting info
         // -------------
-        glm::vec3 lightPos(0.0f, -1.0f, -1.0f);
+        glm::vec3 lightPos(-1.0f, 5.0f, -1.0f);
 
         while (!glfwWindowShouldClose(window)) {
-            //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            // 1. render depth of scene to texture (from light's perspective)
-        // --------------------------------------------------------------
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
             float near_plane = 1.0f, far_plane = 7.5f;
@@ -378,7 +372,7 @@ int main(int argc, char** argv) {
             depthShader->setUniform("model", play);
             player1.Draw(depthShader);
             depthShader->setUniform("model", model);
-            //floor.Draw(depthShader);
+            floor.Draw(depthShader);
             map.Draw(depthShader);
             depthShader->setUniform("model", podestModel);
             podest.Draw(depthShader);
@@ -488,6 +482,7 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
+
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
