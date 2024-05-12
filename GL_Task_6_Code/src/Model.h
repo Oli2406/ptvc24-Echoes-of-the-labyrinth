@@ -61,6 +61,7 @@ private:
     PxPhysics* physics;
     PxScene* scene;
     vector<PxRigidDynamic*> physxActors;
+    PxRigidDynamic* actor;
     
 public:
 
@@ -106,23 +107,30 @@ public:
             PxTriangleMesh* triangleMesh = createTriangle(this->meshes[i]);
 
             if (triangleMesh) {
-                cout << "Triangle mesh created successfully for mesh " << i << endl;
+
+                // Debugging line to show the number of vertices in the mesh
+                cout << "Number of vertices in the PhysX mesh for mesh " << i << ": " << triangleMesh->getNbVertices() << endl;
 
                 PxTransform transform(PxIdentity);
 
-                PxVec3 initialPosition(0.0f, 0.0f, 0.0f);
+                //PxVec3 initialPosition(0.0f, 0.0f, 0.0f);
                 PxVec3 initialVelocity(0.0f, 0.0f, 0.0f);
 
                 PxRigidDynamic* dynamicActor = createDynamic(transform, PxTriangleMeshGeometry(triangleMesh), physics, physics->createMaterial(0.5f, 0.5f, 0.1f), scene, initialVelocity);
 
                 this->physxActors.push_back(dynamicActor);
+                this->actor = dynamicActor;
 
-                cout << "PhysX dynamic actor added for mesh " << i << endl;
             }
             else {
                 cout << "Failed to create triangle mesh for mesh " << i << endl;
             }
         }
+    }
+
+
+    PxRigidDynamic* getPlayerModel() {
+        return this->actor;
     }
 
 
@@ -135,9 +143,6 @@ public:
         scene->addActor(*dynamic);
         return dynamic;
     }
-
-
-
 
 private:
     

@@ -89,7 +89,7 @@ void main() {
 	vec3 I = normalize(position_world - camera_world);
     vec3 R = reflect(I, normalize(n));
 	vec3 reflectedColor = texture(skybox, R).rgb;
-	texColor = mix(texColor, reflectedColor, 0.1f); //hier ändern wenn du mehr reflektion willst
+	texColor = mix(texColor, reflectedColor, 0.2f); //hier ändern wenn du mehr reflektion willst
 
 	float dotLightNormal = dot(-dirL.direction, n);
 

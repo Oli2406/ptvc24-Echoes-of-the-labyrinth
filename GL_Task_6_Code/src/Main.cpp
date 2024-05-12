@@ -61,7 +61,6 @@ static bool _dragging = true;
 static bool _strafing = false;
 static float _zoom = 5.0f;
 
-Player player1;
 ArcCamera camera;
 bool firstMouse = true;
 static float PI = 3.14159265358979;
@@ -286,8 +285,9 @@ int main(int argc, char** argv) {
 
 
         //Physics simulation;
+        Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getPlayerModel());
 
-        player1.set(adventurer, glm::vec3(0.0f, 0.0f, 0.0f), 0, 0, 0, 1);
+        player1.set(adventurer, 0, 0, 0, 1);
 
         // Initialize camera
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
@@ -329,7 +329,7 @@ int main(int argc, char** argv) {
         float prevAngle = 0.0f;
 
         // configure depth map FBO
-    // -----------------------
+        // -----------------------
         const unsigned int SHADOW_WIDTH = window_width, SHADOW_HEIGHT = window_height;
         unsigned int depthMapFBO;
         glGenFramebuffers(1, &depthMapFBO);
@@ -387,7 +387,6 @@ int main(int argc, char** argv) {
             fireShad.draw();
             torchShad.draw();
             
-            depthShader->setUniform("modelMatrix", play);
             player1.Draw(depthShader);
             depthShader->setUniform("modelMatrix", model);
             floor.Draw(depthShader);
@@ -413,7 +412,6 @@ int main(int argc, char** argv) {
             viewProjectionMatrix = projection * viewMatrix;
 
             modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
-            modelShader->setUniform("model", play);
             modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
             modelShader->setUniform("materialCoefficients", materialCoefficients);
             modelShader->setUniform("specularAlpha", alpha);
@@ -439,18 +437,18 @@ int main(int argc, char** argv) {
 
             player1.Draw(modelShader);
 
-            modelShader->setUniform("model", model);
+            modelShader->setUniform("modelMatrix", model);
 
             floor.Draw(modelShader);
             map.Draw(modelShader);
 
-            modelShader->setUniform("model", podestModel);
+            modelShader->setUniform("modelMatrix", podestModel);
 
             podest.Draw(modelShader);
 
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-            modelShader->setUniform("model", modelDiamiond);
+            modelShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(modelShader);
             
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
@@ -460,7 +458,6 @@ int main(int argc, char** argv) {
             fire.draw();
             torch.draw();
 
-            // Berechne die aktualisierte Position für fire und torch um 2 Einheiten höher als die Position von player1
             glm::vec3 firePosition = player1.getPosition() + glm::vec3(0.4f, 1.5f, 0.0f);
             glm::vec3 torchPosition = player1.getPosition() + glm::vec3(0.4f, 1.41f, 0.0f);
             fire.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));

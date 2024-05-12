@@ -24,15 +24,15 @@ class Player
 {
 private:
 	Model model;
-	glm::vec3 position;
-	glm::vec3 pos = glm::vec3(0, 0, 0);
+	PxRigidDynamic* physxModel;
+	PxVec3 position;
 	float rotX, rotY, rotZ;
 	float scale;
 	const float RUN_SPEED = 20.0f;
 	const float TURN_SPEED = 160.0f;
 	float speed = 0;
 	float turnSpeed = 0;
-	const double PI = 3.14159265358979323846; // Manuelle Definition von PI
+	const double PI = 3.14159265358979323846;
 	const float GRAVITY = -9.81f;
 	const float JUMP_POWER = 5.0f;
 	float upwardSpeed = 0;
@@ -40,25 +40,22 @@ private:
 	boolean isInAir = false;
 	boolean jumping = false;
 	float prevCameraDirectionX = 0.0f;
+	float moveForce = 1000.0f;
+	glm::mat4 modelMatrix;
 
 public:
-	Player(){
-		position = glm::vec3(0, 0, 0);
-		rotX = 0.5f;
-		rotY = 0.5f;
-		rotZ = 0.5f;
-		scale = 0;
-	}
 
-	Player(Model model, glm::vec3 position, float rotX, float rotY, float rotZ, float scale) 
+	Player(Model model, float rotX, float rotY, float rotZ, float scale, PxRigidDynamic* physxModel)
 	{
 		this->model = model;
-		this->position = position;
+		this->position = physxModel->getGlobalPose().p;
 		this->rotX = rotX;
 		this->rotY = rotY;
 		this->rotZ = rotZ;
 		this->scale = scale;
+		this->physxModel = physxModel;
 	}
+
 
 	float getScale() {
 		return scale;
@@ -77,42 +74,41 @@ public:
 	}
 
 	glm::vec3 getPosition() {
-		glm::vec3 now = position - pos;
-		pos = position;
-		return now;
+		PxVec3 physxPos = physxModel->getGlobalPose().p;
+		return glm::vec3(physxPos.x, physxPos.y, physxPos.z);
 	}
 
 	glm::vec3 getPos() {
-		return position;
+		return getPosition();
 	}
 
 	Model getModel() {
 		return model;
 	}
 
+	void updateModelMatrix() {
+		PxTransform transform = physxModel->getGlobalPose();
+		PxQuat orientation = transform.q;
+
+		glm::vec3 glmPosition(position.x, position.y, position.z);
+		glm::quat glmOrientation(orientation.w, orientation.x, orientation.y, orientation.z);
+
+		modelMatrix = glm::translate(glm::mat4(1.0f), glmPosition) * glm::toMat4(glmOrientation);
+	}
+
 	void Draw(std::shared_ptr<Shader> shader) {
+		this->updateModelMatrix();
+		shader->setUniform("modelMatrix", modelMatrix);
 		this->model.Draw(shader);
 	}
 
-	void set(Model model, glm::vec3 position, float rotX, float rotY, float rotZ, float scale) {
+	void set(Model model, float rotX, float rotY, float rotZ, float scale) {
 		this->model = model;
-		this->position = position;
+		this->position = physxModel->getGlobalPose().p;
 		this->rotX = rotX;
 		this->rotY = rotY;
 		this->rotZ = rotZ;
 		this->scale = scale;
-	}
-
-	void increasePosition(float dx, float dy, float dz) {
-		position.x += dx;
-		position.y += dy;
-		position.z += dz;
-	}
-
-	void increaseRotation(float dx, float dy, float dz) {
-		rotX += dx;
-		rotY += dy;
-		rotZ += dz;
 	}
 
 	void jump(float delta) {
@@ -121,14 +117,10 @@ public:
 			isInAir = true;
 		}
 		if (isInAir) {
-			position.y += upwardSpeed * delta;
+			PxVec3 velocity = physxModel->getLinearVelocity();
+			velocity.y = upwardSpeed;
+			physxModel->setLinearVelocity(velocity);
 			upwardSpeed += GRAVITY * delta;
-
-			if (position.y <= TERRAIN_HEIGHT) {
-				position.y = TERRAIN_HEIGHT;
-				upwardSpeed = 0.0f;
-				isInAir = false;
-			}
 		}
 	}
 
@@ -141,31 +133,25 @@ public:
 		glm::quat rotationQuat = yawQuat * pitchQuat;
 		glm::vec3 eulerAngles = glm::eulerAngles(rotationQuat);
 		float finalYaw = eulerAngles.z;
-		rotY = finalYaw; // If you want to keep rotation in radians
+		rotY = finalYaw;
 	}
-
-
-
 
 	void checkInputs(GLFWwindow* window, float delta, glm::vec3 direction) {
 		glm::vec3 horizontalDirection = glm::normalize(glm::vec3(direction.x, 0.0f, direction.z));
+		glm::vec3 verticalDirection = glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f)));
 
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			position += horizontalDirection * delta * 1.5f;
-
+			physxModel->addForce(PxVec3(horizontalDirection.x, 0.0, horizontalDirection.z) * moveForce, PxForceMode::eFORCE);
 		}
 		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position -= horizontalDirection * delta * 1.5f;
-
+			physxModel->addForce(PxVec3(-horizontalDirection.x, 0.0, -horizontalDirection.z) * moveForce, PxForceMode::eFORCE);
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position -= glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta * 1.5f;
-
+			physxModel->addForce(PxVec3(-verticalDirection.x, 0.0, -verticalDirection.z) * moveForce, PxForceMode::eFORCE);
 		}
 		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position += glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * delta * 1.5f;
-
+			physxModel->addForce(PxVec3(verticalDirection.x, 0.0, verticalDirection.z) * moveForce, PxForceMode::eFORCE);
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
@@ -177,4 +163,6 @@ public:
 			jump(delta);
 		}
 	}
+
+
 };
