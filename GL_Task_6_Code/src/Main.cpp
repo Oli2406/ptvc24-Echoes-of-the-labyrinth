@@ -266,20 +266,20 @@ int main(int argc, char** argv) {
         );
 
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
-        Model map(&path[0], physics, scene);
+        Model map(&path[0], physics, scene, false);
         Skybox skybox;
 
         string path1 = gcgFindTextureFile("assets/geometry/podest/podest.obj");
-        Model podest(&path1[0], physics, scene);
+        Model podest(&path1[0], physics, scene, false);
 
         string path2 = gcgFindTextureFile("assets/geometry/floor/floor.obj");
-        Model floor(&path2[0], physics, scene);
+        Model floor(&path2[0], physics, scene, false);
 
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
-        Model diamond(&path3[0], physics, scene);
+        Model diamond(&path3[0], physics, scene, false);
 
         string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.obj");
-        Model adventurer(&path4[0], physics, scene);
+        Model adventurer(&path4[0], physics, scene, true);
 
         //diamond.printNormals();
 

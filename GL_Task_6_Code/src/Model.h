@@ -20,6 +20,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#define COLLISION_GROUP_DYNAMIC 1
+#define COLLISION_GROUP_STATIC 2
+#define COLLISION_FLAG_DYNAMIC (1<<0)
+#define COLLISION_FLAG_STATIC (1<<1)
+
 using namespace std;
 using namespace physx;
 
@@ -35,9 +40,9 @@ public:
         this->loadModel( path );
     }
 
-    Model(GLchar* path, PxPhysics* physics, PxScene* scene) {
+    Model(GLchar* path, PxPhysics* physics, PxScene* scene, bool isDynamic) {
         this->loadModel(path);
-        this->initPhysics(physics, scene);
+        this->initPhysics(physics, scene, isDynamic);
     }
 
     Model() {
@@ -96,11 +101,9 @@ public:
         this->processNode( scene->mRootNode, scene );
     }
 
-    void initPhysics(PxPhysics* physics, PxScene* scene) {
+    void initPhysics(PxPhysics* physics, PxScene* scene, bool isDynamic) {
         this->physics = physics;
         this->scene = scene;
-
-        cout << "Initializing Physics..." << endl;
 
         for (GLuint i = 0; i < this->meshes.size(); i++)
         {
@@ -108,25 +111,28 @@ public:
 
             if (triangleMesh) {
 
-                // Debugging line to show the number of vertices in the mesh
-                cout << "Number of vertices in the PhysX mesh for mesh " << i << ": " << triangleMesh->getNbVertices() << endl;
-
                 PxTransform transform(PxIdentity);
 
-                //PxVec3 initialPosition(0.0f, 0.0f, 0.0f);
+                PxVec3 initialPosition(0.0f, 0.0f, 0.0f);
                 PxVec3 initialVelocity(0.0f, 0.0f, 0.0f);
 
                 PxRigidDynamic* dynamicActor = createDynamic(transform, PxTriangleMeshGeometry(triangleMesh), physics, physics->createMaterial(0.5f, 0.5f, 0.1f), scene, initialVelocity);
 
+                if (!isDynamic) {
+                    dynamicActor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+                }
+                else {
+                    PxShape* shapeBuffer[1];
+                    dynamicActor->getShapes(shapeBuffer, 1);
+                    shapeBuffer[0]->setSimulationFilterData(PxFilterData(COLLISION_GROUP_DYNAMIC, COLLISION_FLAG_DYNAMIC, 0, 0));
+                }
                 this->physxActors.push_back(dynamicActor);
                 this->actor = dynamicActor;
+            }
 
-            }
-            else {
-                cout << "Failed to create triangle mesh for mesh " << i << endl;
-            }
         }
     }
+
 
 
     PxRigidDynamic* getPlayerModel() {
