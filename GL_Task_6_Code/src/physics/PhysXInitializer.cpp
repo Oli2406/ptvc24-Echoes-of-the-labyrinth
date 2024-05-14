@@ -1,4 +1,4 @@
-#include "PhysXInitializer.h"
+/*#include "PhysXInitializer.h"
 #include <iostream>
 #include <PxPhysicsAPI.h>
 
@@ -15,10 +15,14 @@ PxPhysics* PhysXInitializer::initializePhysX() {
         std::cerr << "Failed to create PhysX foundation!" << std::endl;
         return nullptr;
     }
+    
     PxPvd* pvd = PxCreatePvd(*foundation);
     PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
+    if (transport == NULL)
+        return NULL;
     pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
-    PxPhysics* physics = PxCreatePhysics(PX_PHYSICS_VERSION, *foundation, PxTolerancesScale(), true, pvd);
+
+    PxPhysics* physics = PxCreatePhysics(PX_PHYSICS_VERSION, *foundation, PxTolerancesScale(), true);
     if (!physics) {
         std::cerr << "Failed to create PhysX physics!" << std::endl;
         return nullptr;
@@ -30,7 +34,7 @@ PxPhysics* PhysXInitializer::initializePhysX() {
 PxScene* PhysXInitializer::createPhysXScene(PxPhysics* physics) {
     PxSceneDesc sceneDesc(physics->getTolerancesScale());
     sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
-    gDispatcher = PxDefaultCpuDispatcherCreate(4);
+    gDispatcher = PxDefaultCpuDispatcherCreate(0);
     sceneDesc.cpuDispatcher = gDispatcher;
     sceneDesc.filterShader = PxDefaultSimulationFilterShader;
     PxScene* scene = physics->createScene(sceneDesc);
@@ -41,11 +45,13 @@ PxScene* PhysXInitializer::createPhysXScene(PxPhysics* physics) {
         return nullptr;
     }
     PxPvdSceneClient* pvdClient = scene->getScenePvdClient();
-    if (pvdClient)
-    {
+    if (pvdClient) {
         pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
         pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
         pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
+    }
+    else {
+        std::cout << "nope" << std::endl;
     }
     gMaterial = physics->createMaterial(0.5f, 0.5f, 0.6f);
     PxRigidStatic* groundPlane = PxCreatePlane(*physics, PxPlane(0, 1, 0, 0), *gMaterial);
@@ -56,4 +62,4 @@ PxScene* PhysXInitializer::createPhysXScene(PxPhysics* physics) {
     shapeBuffer[0]->setFlag(PxShapeFlag::eSCENE_QUERY_SHAPE, true);
     std::cout << "Scene setup was successful!" << std::endl;
     return scene;
-}
+}*/

@@ -105,21 +105,19 @@ public:
         this->physics = physics;
         this->scene = scene;
 
-        for (GLuint i = 0; i < this->meshes.size(); i++)
-        {
+        for (GLuint i = 0; i < this->meshes.size(); i++) {
             PxTriangleMesh* triangleMesh = createTriangle(this->meshes[i]);
-
             if (triangleMesh) {
-
                 PxTransform transform(PxIdentity);
-
                 PxVec3 initialPosition(0.0f, 0.0f, 0.0f);
                 PxVec3 initialVelocity(0.0f, 0.0f, 0.0f);
-
                 PxRigidDynamic* dynamicActor = createDynamic(transform, PxTriangleMeshGeometry(triangleMesh), physics, physics->createMaterial(0.5f, 0.5f, 0.1f), scene, initialVelocity);
-
                 if (!isDynamic) {
                     dynamicActor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+                    dynamicActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
+                    dynamicActor->setAngularVelocity(PxVec3(0.f, 0.f, 5.f));
+                    dynamicActor->setAngularDamping(0.f);
+                    dynamicActor->setMassSpaceInertiaTensor(PxVec3(0.f));
                 }
                 else {
                     PxShape* shapeBuffer[1];
@@ -129,7 +127,6 @@ public:
                 this->physxActors.push_back(dynamicActor);
                 this->actor = dynamicActor;
             }
-
         }
     }
 

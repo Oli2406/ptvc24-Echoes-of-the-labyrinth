@@ -15,7 +15,7 @@
 #include "Skybox.h"
 #include "Player.h"
 #include "ArcCamera.h"
-#include "physics/PhysXInitializer.h"
+//#include "physics/PhysXInitializer.h"
 #include "Geometry.h"
 
 #include <filesystem>
@@ -46,6 +46,7 @@ void renderQuad();
 void renderScene(const std::shared_ptr<Shader> shader);
 void renderCube();
 unsigned int loadTexture(const char* path);
+void initPhysics();
 
 /* --------------------------------------------- */
 // Global variables
@@ -65,8 +66,27 @@ ArcCamera camera;
 bool firstMouse = true;
 static float PI = 3.14159265358979;
 
-PxPhysics* physics = PhysXInitializer::initializePhysX();
-PxScene* scene = PhysXInitializer::createPhysXScene(physics);
+
+
+
+PxDefaultAllocator		gAllocator;
+PxDefaultErrorCallback	gErrorCallback;
+
+PxFoundation* gFoundation = nullptr;
+PxPhysics* gPhysics = nullptr;
+
+PxDefaultCpuDispatcher* gDispatcher = nullptr;
+PxScene* gScene = nullptr;
+
+PxMaterial* gMaterial = nullptr;
+PxPvd* gPvd = nullptr;
+
+
+
+
+
+//PxPhysics* physics = PhysXInitializer::initializePhysX();
+//PxScene* scene = PhysXInitializer::createPhysXScene(physics);
 // meshes
 unsigned int planeVAO;
 
@@ -203,6 +223,8 @@ int main(int argc, char** argv) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
 
+    initPhysics();
+
     /* --------------------------------------------- */
     // Initialize scene and render loop
     /* --------------------------------------------- */
@@ -266,20 +288,20 @@ int main(int argc, char** argv) {
         );
 
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
-        Model map(&path[0], physics, scene, false);
+        Model map(&path[0], gPhysics, gScene, false);
         Skybox skybox;
 
         string path1 = gcgFindTextureFile("assets/geometry/podest/podest.obj");
-        Model podest(&path1[0], physics, scene, false);
+        Model podest(&path1[0], gPhysics, gScene, false);
 
         string path2 = gcgFindTextureFile("assets/geometry/floor/floor.obj");
-        Model floor(&path2[0], physics, scene, false);
+        Model floor(&path2[0], gPhysics, gScene, false);
 
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
-        Model diamond(&path3[0], physics, scene, false);
+        Model diamond(&path3[0], gPhysics, gScene, false);
 
         string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.obj");
-        Model adventurer(&path4[0], physics, scene, true);
+        Model adventurer(&path4[0], gPhysics, gScene, true);
 
         //diamond.printNormals();
 
@@ -468,8 +490,8 @@ int main(int argc, char** argv) {
 
             pointL.position = player1.getPos() + glm::vec3(0.4f, 1.5f, 0.0f);
             
-            scene->simulate(dt);
-            scene->fetchResults(true);
+            gScene->simulate(dt);
+            gScene->fetchResults(true);
             
             sky->use();
             sky->setUniform("viewProjMatrix", viewProjectionMatrix);
@@ -760,4 +782,76 @@ static std::string FormatDebugOutput(GLenum source, GLenum type, GLuint id, GLen
     stringStream << ", ID = " << id << "]";
 
     return stringStream.str();
+}
+
+void initPhysics()
+{
+    gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+    if (!gFoundation) {
+        std::cerr << "Failed to create PhysX foundation." << std::endl;
+        return;
+    }
+
+    gPvd = PxCreatePvd(*gFoundation);
+    PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
+    if (!gPvd || !transport || !gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL)) {
+        std::cerr << "Failed to connect to PVD." << std::endl;
+        if (transport) {
+            transport->release();
+        }
+        if (gPvd) {
+            gPvd->release();
+        }
+        gFoundation->release();
+        return;
+    }
+
+    gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
+    if (!gPhysics) {
+        std::cerr << "Failed to create PhysX physics." << std::endl;
+        gPvd->disconnect();
+        transport->release();
+        gPvd->release();
+        gFoundation->release();
+        return;
+    }
+
+    PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
+    sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+    gDispatcher = PxDefaultCpuDispatcherCreate(2);
+    if (!gDispatcher) {
+        std::cerr << "Failed to create dispatcher." << std::endl;
+        return;
+    }
+    sceneDesc.cpuDispatcher = gDispatcher;
+    sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+    gScene = gPhysics->createScene(sceneDesc);
+
+    if (!gScene) {
+        std::cerr << "Failed to create the scene." << std::endl;
+        return;
+    }
+
+    PxPvdSceneClient* pvdClient = gScene->getScenePvdClient();
+    if (pvdClient) {
+        pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
+        pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
+        pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
+    }
+    else {
+        std::cout << "PVD client is null, check PVD connection stability." << std::endl;
+    }
+
+    gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+    if (!gMaterial) {
+        std::cerr << "Failed to create material." << std::endl;
+        return;
+    }
+
+    PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
+    if (!groundPlane) {
+        std::cerr << "Failed to create ground plane." << std::endl;
+        return;
+    }
+    gScene->addActor(*groundPlane);
 }
