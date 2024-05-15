@@ -34,13 +34,13 @@ private:
 	float turnSpeed = 0;
 	const double PI = 3.14159265358979323846;
 	const float GRAVITY = -9.81f;
-	const float JUMP_POWER = 5.0f;
+	const float JUMP_POWER = 0.05f;
 	float upwardSpeed = 0;
 	const float TERRAIN_HEIGHT = 0;
 	boolean isInAir = false;
 	boolean jumping = false;
 	float prevCameraDirectionX = 0.0f;
-	float moveForce = 2.0f;
+	float moveForce = 0.05f;
 	glm::mat4 modelMatrix;
 
 public:
@@ -144,29 +144,33 @@ public:
 		glm::vec3 horizontalDirection = glm::normalize(glm::vec3(direction.x, 0.0f, direction.z));
 		glm::vec3 verticalDirection = glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f)));
 
-		PxVec3 velocity = physxModel->getLinearVelocity();
-
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			velocity += PxVec3(horizontalDirection.x, 0.0, horizontalDirection.z) * moveForce * delta;
+			PxVec3 force = PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * moveForce * delta;
+			physxModel->addForce(force, PxForceMode::eIMPULSE);
 		}
-		else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			velocity -= PxVec3(horizontalDirection.x, 0.0, horizontalDirection.z) * moveForce * delta;
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+			PxVec3 force = PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * moveForce * delta;
+			physxModel->addForce(force, PxForceMode::eIMPULSE);
 		}
-
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			velocity -= PxVec3(verticalDirection.x, 0.0, verticalDirection.z) * moveForce * delta;
+			PxVec3 force = PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * moveForce * delta;
+			physxModel->addForce(force, PxForceMode::eIMPULSE);
 		}
-		else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			velocity += PxVec3(verticalDirection.x, 0.0, verticalDirection.z) * moveForce * delta;
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+			PxVec3 force = PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * moveForce * delta;
+			physxModel->addForce(force, PxForceMode::eIMPULSE);
 		}
 
-		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !jumping && !isInAir) {
-			velocity.y = JUMP_POWER;
-			jumping = true;
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !isInAir) {
+			PxVec3 force = PxVec3(0.0f, JUMP_POWER, 0.0f);
+			physxModel->addForce(force, PxForceMode::eIMPULSE);
 			isInAir = true;
 		}
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE && isInAir) {
+			isInAir = false;
+		}
 
-		physxModel->setLinearVelocity(velocity);
+		PxVec3 velocity = physxModel->getLinearVelocity();
 	}
 
 

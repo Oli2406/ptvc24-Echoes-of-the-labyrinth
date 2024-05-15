@@ -25,19 +25,19 @@
 #define COLLISION_FLAG_DYNAMIC (1<<0)
 #define COLLISION_FLAG_STATIC (1<<1)
 
-using namespace std;
+
 using namespace physx;
 
-GLint TextureFromFile( const char *path, string directory );
+GLint TextureFromFile(const char* path, string directory);
 
 class Model
 {
 public:
-    
+
     // Constructor, expects a filepath to a 3D model.
-    Model( GLchar *path )
+    Model(GLchar* path)
     {
-        this->loadModel( path );
+        this->loadModel(path);
     }
 
     Model(GLchar* path, PxPhysics* physics, PxScene* scene, bool isDynamic) {
@@ -48,18 +48,18 @@ public:
     Model() {
 
     }
-    
+
     // Draws the model, and thus all its meshes
-    void Draw( std::shared_ptr<Shader> shader )
+    void Draw(std::shared_ptr<Shader> shader)
     {
-        for ( GLuint i = 0; i < this->meshes.size( ); i++ )
+        for (GLuint i = 0; i < this->meshes.size(); i++)
         {
-            this->meshes[i].Draw( shader );
+            this->meshes[i].Draw(shader);
         }
     }
-    
+
 private:
-    
+
     vector<Mesh> meshes;
     string directory;
     vector<Text> textures_loaded;	// Stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
@@ -67,7 +67,7 @@ private:
     PxScene* scene;
     vector<PxRigidDynamic*> physxActors;
     PxRigidDynamic* actor;
-    
+
 public:
 
     void printNormals() {
@@ -82,54 +82,76 @@ public:
     }
 
     // Loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
-    void loadModel( string path )
+    void loadModel(string path)
     {
         // Read file via ASSIMP
         Assimp::Importer importer;
-        const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-        
+        const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+
         // Check for errors
-        if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
         {
-            cout << "ERROR::ASSIMP:: " << importer.GetErrorString( ) << endl;
+            cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << endl;
             return;
         }
         // Retrieve the directory path of the filepath
-        this->directory = path.substr( 0, path.find_last_of( '/' ) );
-        
+        this->directory = path.substr(0, path.find_last_of('/'));
+
         // Process ASSIMP's root node recursively
-        this->processNode( scene->mRootNode, scene );
+        this->processNode(scene->mRootNode, scene);
     }
 
     void initPhysics(PxPhysics* physics, PxScene* scene, bool isDynamic) {
         this->physics = physics;
         this->scene = scene;
 
+        // Ensure material creation is valid
+        PxMaterial* material = physics->createMaterial(0.5f, 0.5f, 0.1f);
+        if (!material) {
+            std::cerr << "Failed to create material" << std::endl;
+            return;
+        }
+
         for (GLuint i = 0; i < this->meshes.size(); i++) {
-            PxTriangleMesh* triangleMesh = createTriangle(this->meshes[i]);
-            if (triangleMesh) {
-                PxTransform transform(PxIdentity);
-                PxVec3 initialPosition(0.0f, 0.0f, 0.0f);
-                PxVec3 initialVelocity(0.0f, 0.0f, 0.0f);
-                PxRigidDynamic* dynamicActor = createDynamic(transform, PxTriangleMeshGeometry(triangleMesh), physics, physics->createMaterial(0.5f, 0.5f, 0.1f), scene, initialVelocity);
-                if (!isDynamic) {
-                    dynamicActor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-                    dynamicActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
-                    dynamicActor->setAngularVelocity(PxVec3(0.f, 0.f, 5.f));
-                    dynamicActor->setAngularDamping(0.f);
-                    dynamicActor->setMassSpaceInertiaTensor(PxVec3(0.f));
-                }
-                else {
-                    PxShape* shapeBuffer[1];
-                    dynamicActor->getShapes(shapeBuffer, 1);
-                    shapeBuffer[0]->setSimulationFilterData(PxFilterData(COLLISION_GROUP_DYNAMIC, COLLISION_FLAG_DYNAMIC, 0, 0));
-                }
-                this->physxActors.push_back(dynamicActor);
-                this->actor = dynamicActor;
+            // Calculate the bounding box of the mesh
+            Mesh& mesh = this->meshes[i];
+            glm::vec3 minVertex(FLT_MAX), maxVertex(-FLT_MAX);
+
+            for (const auto& vertex : mesh.vertices) {
+                minVertex.x = std::min(minVertex.x, vertex.Position.x);
+                minVertex.y = std::min(minVertex.y, vertex.Position.y);
+                minVertex.z = std::min(minVertex.z, vertex.Position.z);
+
+                maxVertex.x = max(maxVertex.x, vertex.Position.x);
+                maxVertex.y = max(maxVertex.y, vertex.Position.y);
+                maxVertex.z = max(maxVertex.z, vertex.Position.z);
             }
+
+            glm::vec3 boxDimensions = (maxVertex - minVertex) * 0.5f; // Half extents
+            glm::vec3 boxCenter = (maxVertex + minVertex) * 0.5f;
+
+            // Ensure dimensions are valid
+            if (boxDimensions.x <= 0 || boxDimensions.y <= 0 || boxDimensions.z <= 0) {
+                std::cerr << "Invalid box dimensions for mesh: " << i << std::endl;
+                continue; // Skip this mesh
+            }
+
+            PxBoxGeometry boxGeometry(PxVec3(boxDimensions.x, boxDimensions.y, boxDimensions.z));
+            PxTransform transform(PxVec3(boxCenter.x, boxCenter.y, boxCenter.z));
+            PxVec3 initialVelocity(0.0f, 0.0f, 0.0f);
+            PxRigidDynamic* dynamicActor = createDynamic(transform, boxGeometry, physics, material, scene, initialVelocity);
+            if (!isDynamic) {
+                dynamicActor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+                dynamicActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
+                dynamicActor->setAngularVelocity(PxVec3(0.f, 0.f, 5.f));
+                dynamicActor->setAngularDamping(0.f);
+                dynamicActor->setMassSpaceInertiaTensor(PxVec3(0.f));
+            }
+
+            this->physxActors.push_back(dynamicActor);
+            this->actor = dynamicActor;
         }
     }
-
 
 
     PxRigidDynamic* getPlayerModel() {
@@ -137,66 +159,64 @@ public:
     }
 
 
+private:
+
     PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geometry, PxPhysics* physics, PxMaterial* material, PxScene* scene, const PxVec3& velocity = PxVec3(0)) {
-        PxRigidDynamic* dynamic = physics->createRigidDynamic(t);
-        PxShape* shape = physics->createShape(geometry, *material);
-        dynamic->attachShape(*shape);
+        PxRigidDynamic* dynamic = PxCreateDynamic(*physics, t, geometry, *material, 10.0f);
         dynamic->setAngularDamping(0.5f);
         dynamic->setLinearVelocity(velocity);
         scene->addActor(*dynamic);
         return dynamic;
     }
 
-private:
-    
     // Processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
-    void processNode( aiNode* node, const aiScene* scene )
+    void processNode(aiNode* node, const aiScene* scene)
     {
         // Process each mesh located at the current node
-        for ( GLuint i = 0; i < node->mNumMeshes; i++ )
+        for (GLuint i = 0; i < node->mNumMeshes; i++)
         {
             // The node object only contains indices to index the actual objects in the scene.
             // The scene contains all the data, node is just to keep stuff organized (like relations between nodes).
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            
-            this->meshes.push_back( this->processMesh( mesh, scene ) );
+
+            this->meshes.push_back(this->processMesh(mesh, scene));
         }
-        
+
         // After we've processed all of the meshes (if any) we then recursively process each of the children nodes
-        for ( GLuint i = 0; i < node->mNumChildren; i++ )
+        for (GLuint i = 0; i < node->mNumChildren; i++)
         {
-            this->processNode( node->mChildren[i], scene );
+            this->processNode(node->mChildren[i], scene);
         }
     }
-    
-    Mesh processMesh( aiMesh *mesh, const aiScene *scene )
+
+    Mesh processMesh(aiMesh* mesh, const aiScene* scene)
     {
         // Data to fill
         vector<Vertex> vertices;
         vector<GLuint> indices;
         vector<Text> textures;
-        
+
         // Walk through each of the mesh's vertices
-        for ( GLuint i = 0; i < mesh->mNumVertices; i++ )
+        for (GLuint i = 0; i < mesh->mNumVertices; i++)
         {
             Vertex vertex;
             glm::vec3 vector; // We declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
-            
+
             // Positions
             vector.x = mesh->mVertices[i].x;
             vector.y = mesh->mVertices[i].y;
             vector.z = mesh->mVertices[i].z;
             vertex.Position = vector;
-            
+
             // Normals
             vector.x = mesh->mNormals[i].x;
             vector.y = mesh->mNormals[i].y;
             vector.z = mesh->mNormals[i].z;
             vertex.Normal = vector;
 
-            
+
             // Texture Coordinates
-            if( mesh->mTextureCoords[0] ) // Does the mesh contain texture coordinates?
+            if (mesh->mTextureCoords[0]) // Does the mesh contain texture coordinates?
             {
                 glm::vec2 vec;
                 // A vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't
@@ -207,26 +227,26 @@ private:
             }
             else
             {
-                vertex.TexCoords = glm::vec2( 0.0f, 0.0f );
+                vertex.TexCoords = glm::vec2(0.0f, 0.0f);
                 cout << "No textures were loaded." << endl;
             }
-            
-            vertices.push_back( vertex );
+
+            vertices.push_back(vertex);
         }
-        
+
         // Now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
-        for ( GLuint i = 0; i < mesh->mNumFaces; i++ )
+        for (GLuint i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
             // Retrieve all indices of the face and store them in the indices vector
-            for ( GLuint j = 0; j < face.mNumIndices; j++ )
+            for (GLuint j = 0; j < face.mNumIndices; j++)
             {
-                indices.push_back( face.mIndices[j] );
+                indices.push_back(face.mIndices[j]);
             }
         }
-        
+
         // Process materials
-        if( mesh->mMaterialIndex >= 0 )
+        if (mesh->mMaterialIndex >= 0)
         {
             aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
             // We assume a convention for sampler names in the shaders. Each diffuse texture should be named
@@ -235,18 +255,18 @@ private:
             // Diffuse: texture_diffuseN
             // Specular: texture_specularN
             // Normal: texture_normalN
-            
+
             // 1. Diffuse maps
-            vector<Text> diffuseMaps = this->loadMaterialTextures( material, aiTextureType_DIFFUSE, "texture_diffuse" );
-            textures.insert( textures.end( ), diffuseMaps.begin( ), diffuseMaps.end( ) );
-            
+            vector<Text> diffuseMaps = this->loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+            textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+
             // 2. Specular maps
-            vector<Text> specularMaps = this->loadMaterialTextures( material, aiTextureType_SPECULAR, "texture_specular" );
-            textures.insert( textures.end( ), specularMaps.begin( ), specularMaps.end( ) );
+            vector<Text> specularMaps = this->loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+            textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
         }
-        
+
         // Return a mesh object created from the extracted mesh data
-        return Mesh( vertices, indices, textures );
+        return Mesh(vertices, indices, textures);
     }
 
     PxTriangleMesh* createTriangle(const Mesh& mesh)
@@ -287,44 +307,44 @@ private:
         return triangleMesh;
     }
 
-    
+
     // Checks all material textures of a given type and loads the textures if they're not loaded yet.
     // The required info is returned as a Texture struct.
-    vector<Text> loadMaterialTextures( aiMaterial *mat, aiTextureType type, string typeName )
+    vector<Text> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
     {
         vector<Text> textures;
-        
-        for ( GLuint i = 0; i < mat->GetTextureCount( type ); i++ )
+
+        for (GLuint i = 0; i < mat->GetTextureCount(type); i++)
         {
             aiString str;
-            mat->GetTexture( type, i, &str );
-            
+            mat->GetTexture(type, i, &str);
+
             // Check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
             GLboolean skip = false;
-            
-            for ( GLuint j = 0; j < textures_loaded.size( ); j++ )
+
+            for (GLuint j = 0; j < textures_loaded.size(); j++)
             {
-                if( textures_loaded[j].path == str )
+                if (textures_loaded[j].path == str)
                 {
-                    textures.push_back( textures_loaded[j] );
+                    textures.push_back(textures_loaded[j]);
                     skip = true; // A texture with the same filepath has already been loaded, continue to next one. (optimization)
-                    
+
                     break;
                 }
             }
-            
-            if( !skip )
+
+            if (!skip)
             {   // If texture hasn't been loaded already, load it
                 Text texture;
-                texture.id = TextureFromFile( str.C_Str( ), this->directory );
+                texture.id = TextureFromFile(str.C_Str(), this->directory);
                 texture.type = typeName;
                 texture.path = str;
-                textures.push_back( texture );
-                
-                this->textures_loaded.push_back( texture );  // Store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
+                textures.push_back(texture);
+
+                this->textures_loaded.push_back(texture);  // Store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
             }
         }
-        
+
         return textures;
     }
 };
