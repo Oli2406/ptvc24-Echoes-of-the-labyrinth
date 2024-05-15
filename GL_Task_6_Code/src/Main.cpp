@@ -794,17 +794,7 @@ void initPhysics()
 
     gPvd = PxCreatePvd(*gFoundation);
     PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
-    if (!gPvd || !transport || !gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL)) {
-        std::cerr << "Failed to connect to PVD." << std::endl;
-        if (transport) {
-            transport->release();
-        }
-        if (gPvd) {
-            gPvd->release();
-        }
-        gFoundation->release();
-        return;
-    }
+    gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 
     gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
     if (!gPhysics) {
