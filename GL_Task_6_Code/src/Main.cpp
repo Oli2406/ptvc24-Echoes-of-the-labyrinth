@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+        DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(-2.0f, -4.0f, -1.0f));
         PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
@@ -389,13 +389,15 @@ int main(int argc, char** argv) {
         // -------------
         glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
+        lightPos *= 10;
+
         while (!glfwWindowShouldClose(window)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
-            float near_plane = 1.0f, far_plane = 7.5f;
-            lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+            float near_plane = 0.1f, far_plane = 75.0f;
+            lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
             lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
             // render scene from light's point of view
