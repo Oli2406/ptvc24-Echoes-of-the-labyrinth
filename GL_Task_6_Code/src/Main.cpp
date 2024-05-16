@@ -82,9 +82,6 @@ PxMaterial* gMaterial = nullptr;
 PxPvd* gPvd = nullptr;
 
 
-
-
-
 //PxPhysics* physics = PhysXInitializer::initializePhysX();
 //PxScene* scene = PhysXInitializer::createPhysXScene(physics);
 // meshes
@@ -294,7 +291,7 @@ int main(int argc, char** argv) {
         string path1 = gcgFindTextureFile("assets/geometry/podest/podest.obj");
         Model podest(&path1[0], gPhysics, gScene, false);
 
-        string path2 = gcgFindTextureFile("assets/geometry/floor/floor.obj");
+        string path2 = gcgFindTextureFile("assets/geometry/floor/maze.obj");
         Model floor(&path2[0], gPhysics, gScene, false);
 
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
@@ -307,7 +304,7 @@ int main(int argc, char** argv) {
 
 
         //Physics simulation;
-        Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getPlayerModel());
+        Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getController());
 
         player1.set(adventurer, 0, 0, 0, 1);
 
@@ -325,15 +322,12 @@ int main(int argc, char** argv) {
 
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(6.0f, 6.0f, 6.0f));
 
         glm::mat4 modelDiamiond = glm::mat4(1.0f);
         modelDiamiond = glm::translate(modelDiamiond, glm::vec3(0.0f, 0.0f, 0.0f));
-        modelDiamiond = glm::scale(modelDiamiond, glm::vec3(3.0f, 3.0f, 3.0f));
 
         glm::mat4 podestModel = glm::mat4(1.0f);
         podestModel = glm::translate(podestModel, glm::vec3(0.0f, 0.0f, 0.0f));
-        podestModel = glm::scale(podestModel, glm::vec3(3.0f, 3.0f, 3.0f));
 
         mat4 viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
         glm::vec3 camDir = camera.getPos();
@@ -488,7 +482,7 @@ int main(int argc, char** argv) {
             fireShad.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
             torchShad.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
 
-            pointL.position = player1.getPos() + glm::vec3(0.4f, 1.5f, 0.0f);
+            pointL.position = player1.getPosition() + glm::vec3(0.4f, 1.5f, 0.0f);
             
             gScene->simulate(dt);
             gScene->fetchResults(true);

@@ -16,6 +16,7 @@
 
 #include "PxPhysicsAPI.h"
 #include "cooking/PxCooking.h"
+#include "characterkinematic/PxControllerManager.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
@@ -65,21 +66,13 @@ private:
     vector<Text> textures_loaded;	// Stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
     PxPhysics* physics;
     PxScene* scene;
-    vector<PxRigidDynamic*> physxActors;
-    PxRigidDynamic* actor;
+    vector<PxRigidStatic*> physxActors;
+    PxRigidStatic* actor;
+    PxController* controller;
+    PxConvexMeshCookingResult* convexMesh;
+    float scale;
 
 public:
-
-    void printNormals() {
-        int i = 0;
-        for (const auto& mesh : meshes) {
-            cout << "Normals for Mesh:" << endl;
-            for (const auto& vertex : mesh.vertices) {
-                cout << "Normal " << i << ": (" << vertex.Normal.x << ", " << vertex.Normal.y << ", " << vertex.Normal.z << ")" << endl;
-                i++;
-            }
-        }
-    }
 
     // Loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel(string path)
@@ -105,57 +98,56 @@ public:
         this->physics = physics;
         this->scene = scene;
 
-        // Ensure material creation is valid
         PxMaterial* material = physics->createMaterial(0.5f, 0.5f, 0.1f);
         if (!material) {
             std::cerr << "Failed to create material" << std::endl;
             return;
         }
+        if (!isDynamic) {
+            for (GLuint i = 0; i < this->meshes.size(); i++) {
+                Mesh& mesh = this->meshes[i];
 
-        for (GLuint i = 0; i < this->meshes.size(); i++) {
-            // Calculate the bounding box of the mesh
-            Mesh& mesh = this->meshes[i];
-            glm::vec3 minVertex(FLT_MAX), maxVertex(-FLT_MAX);
+                PxTriangleMesh* triangleMesh = createTriangle(this->meshes[i]);
+                if (!triangleMesh) {
+                    std::cerr << "Failed to create triangle mesh for mesh: " << i << std::endl;
+                    continue;
+                }
 
-            for (const auto& vertex : mesh.vertices) {
-                minVertex.x = std::min(minVertex.x, vertex.Position.x);
-                minVertex.y = std::min(minVertex.y, vertex.Position.y);
-                minVertex.z = std::min(minVertex.z, vertex.Position.z);
+                PxTriangleMeshGeometry geom(triangleMesh);
+                PxTransform transform(PxVec3(0, 0, 0));
+                PxRigidStatic* staticActor = createStatic(transform, geom, physics, material, scene);
 
-                maxVertex.x = max(maxVertex.x, vertex.Position.x);
-                maxVertex.y = max(maxVertex.y, vertex.Position.y);
-                maxVertex.z = max(maxVertex.z, vertex.Position.z);
+                this->physxActors.push_back(staticActor);
+                this->actor = staticActor;
             }
+        }
 
-            glm::vec3 boxDimensions = (maxVertex - minVertex) * 0.5f; // Half extents
-            glm::vec3 boxCenter = (maxVertex + minVertex) * 0.5f;
+        if (isDynamic) {
+            PxCapsuleControllerDesc desc;
+            desc.height = 0.5f;
+            desc.radius = 0.1f;
+            desc.position = PxExtendedVec3(0, 5, 0);
+            desc.upDirection = PxVec3(0, 1, 0);
+            desc.material = material;
 
-            // Ensure dimensions are valid
-            if (boxDimensions.x <= 0 || boxDimensions.y <= 0 || boxDimensions.z <= 0) {
-                std::cerr << "Invalid box dimensions for mesh: " << i << std::endl;
-                continue; // Skip this mesh
+            PxControllerManager* controllerManager = PxCreateControllerManager(*scene);
+            this->controller = controllerManager->createController(desc);
+
+            if (this->controller) {
+                this->controller->setPosition(PxExtendedVec3(2, 2, 2));
             }
-
-            PxBoxGeometry boxGeometry(PxVec3(boxDimensions.x, boxDimensions.y, boxDimensions.z));
-            PxTransform transform(PxVec3(boxCenter.x, boxCenter.y, boxCenter.z));
-            PxVec3 initialVelocity(0.0f, 0.0f, 0.0f);
-            PxRigidDynamic* dynamicActor = createDynamic(transform, boxGeometry, physics, material, scene, initialVelocity);
-            if (!isDynamic) {
-                dynamicActor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-                dynamicActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
-                dynamicActor->setAngularVelocity(PxVec3(0.f, 0.f, 5.f));
-                dynamicActor->setAngularDamping(0.f);
-                dynamicActor->setMassSpaceInertiaTensor(PxVec3(0.f));
+            else {
+                std::cerr << "Failed to create character controller" << std::endl;
             }
-
-            this->physxActors.push_back(dynamicActor);
-            this->actor = dynamicActor;
         }
     }
 
-
-    PxRigidDynamic* getPlayerModel() {
+    PxRigidStatic* getPlayerModel() {
         return this->actor;
+    }
+
+    PxController* getController() {
+        return this->controller;
     }
 
 
@@ -168,6 +160,51 @@ private:
         scene->addActor(*dynamic);
         return dynamic;
     }
+
+    PxRigidStatic* createStatic(const PxTransform& t, const PxGeometry& geometry, PxPhysics* physics, PxMaterial* material, PxScene* scene) {
+        PxRigidStatic* staticActor = PxCreateStatic(*physics, t, geometry, *material);
+        scene->addActor(*staticActor);
+        return staticActor;
+    }
+
+    PxTriangleMesh* createTriangle(const Mesh& mesh)
+    {
+        // Extract vertices and indices from Mesh
+        vector<Vertex> vertices = mesh.vertices;
+        vector<GLuint> indices = mesh.indices;
+
+        PxVec3* pxVertices = new PxVec3[vertices.size()];
+        for (size_t i = 0; i < vertices.size(); i++)
+        {
+            pxVertices[i] = PxVec3(vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z);
+        }
+
+        PxTriangleMeshDesc meshDesc;
+        PxTriangleMeshCookingResult::Enum result;
+        meshDesc.points.count = vertices.size();
+        meshDesc.points.stride = sizeof(PxVec3);
+        meshDesc.points.data = pxVertices;
+
+        meshDesc.triangles.count = indices.size() / 3;
+        meshDesc.triangles.stride = 3 * sizeof(GLuint);
+        meshDesc.triangles.data = indices.data();
+
+        const PxCookingParams cookingParams(physics->getTolerancesScale());
+
+        PxTriangleMesh* triangleMesh = PxCreateTriangleMesh(cookingParams, meshDesc);
+
+        if (triangleMesh) {
+            cout << "Triangle mesh created successfully" << endl;
+        }
+        else {
+            cout << "Failed to create triangle mesh" << endl;
+        }
+
+        delete[] pxVertices;
+
+        return triangleMesh;
+    }
+
 
     // Processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
     void processNode(aiNode* node, const aiScene* scene)
@@ -269,43 +306,6 @@ private:
         return Mesh(vertices, indices, textures);
     }
 
-    PxTriangleMesh* createTriangle(const Mesh& mesh)
-    {
-        // Extract vertices and indices from Mesh
-        vector<Vertex> vertices = mesh.vertices;
-        vector<GLuint> indices = mesh.indices;
-
-        PxVec3* pxVertices = new PxVec3[vertices.size()];
-        for (size_t i = 0; i < vertices.size(); i++)
-        {
-            pxVertices[i] = PxVec3(vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z);
-        }
-
-        PxTriangleMeshDesc meshDesc;
-        PxTriangleMeshCookingResult::Enum result;
-        meshDesc.points.count = vertices.size();
-        meshDesc.points.stride = sizeof(PxVec3);
-        meshDesc.points.data = pxVertices;
-
-        meshDesc.triangles.count = indices.size() / 3;
-        meshDesc.triangles.stride = 3 * sizeof(GLuint);
-        meshDesc.triangles.data = indices.data();
-
-        const PxCookingParams cookingParams(physics->getTolerancesScale());
-
-        PxTriangleMesh* triangleMesh = PxCreateTriangleMesh(cookingParams, meshDesc);
-
-        if (triangleMesh) {
-            cout << "Triangle mesh created successfully" << endl;
-        }
-        else {
-            cout << "Failed to create triangle mesh" << endl;
-        }
-
-        delete[] pxVertices;
-
-        return triangleMesh;
-    }
 
 
     // Checks all material textures of a given type and loads the textures if they're not loaded yet.

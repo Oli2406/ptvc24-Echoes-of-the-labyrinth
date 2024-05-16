@@ -46,6 +46,7 @@ set(LINK_LIBRARIES
     debug PhysXExtensions_static_64_debug optimized PhysXExtensions_static_64
     debug PhysXPvdSDK_static_64_debug optimized PhysXPvdSDK_static_64
     debug PhysXCooking_64_debug optimized PhysXCooking_64
+    debug PhysXCharacterKinematic_static_64_debug optimized PhysXCharacterKinematic_static_64
     OpenGL::GL
 )
 message(LINK_LIBRARIES=${LINK_LIBRARIES})
