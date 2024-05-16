@@ -306,7 +306,7 @@ int main(int argc, char** argv) {
         //Physics simulation;
         Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getController());
 
-        player1.set(adventurer, 0, 0, 0, 1);
+        player1.set(adventurer);
 
         // Initialize camera
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
@@ -334,7 +334,6 @@ int main(int argc, char** argv) {
 
         glm::mat4 play = glm::mat4(1.0f);
         play = glm::translate(play, player1.getPosition());
-        play = glm::scale(play, glm::vec3(player1.getScale(), player1.getScale(), player1.getScale()));
 
         glm::vec3 prevCamDir = glm::vec3(0.0f, 0.0f, 0.0f);
         double prevRotation = 0.0f;
@@ -440,15 +439,9 @@ int main(int argc, char** argv) {
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, depthMap);
 
+            player1.updatePlayerRotation(adventurer.getController(), camDir);
             player1.checkInputs(window, dt, camDir);
-            //player1.updateRotation(camDir);
-            if (camDir != prevCamDir) {
-                angle = player1.getRotY() * 0.005f;
-                //play = glm::rotate(play, float(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-            }
-            play = glm::translate(play, player1.getPosition());
-
-            prevCamDir = camDir;
+            
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture3);

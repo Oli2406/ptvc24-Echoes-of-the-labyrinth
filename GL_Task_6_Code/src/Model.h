@@ -124,10 +124,8 @@ public:
 
         if (isDynamic) {
             PxCapsuleControllerDesc desc;
-            desc.height = 0.5f;
-            desc.radius = 0.1f;
-            desc.position = PxExtendedVec3(0, 5, 0);
-            desc.upDirection = PxVec3(0, 1, 0);
+            desc.height = 1.8f;
+            desc.radius = 0.5f;
             desc.material = material;
 
             PxControllerManager* controllerManager = PxCreateControllerManager(*scene);

@@ -26,10 +26,6 @@ private:
     Model model;
     PxController* characterController;
     PxVec3 position;
-    float rotX, rotY, rotZ;
-    float scale;
-    const float RUN_SPEED = 20.0f;
-    const float TURN_SPEED = 160.0f;
     const float JUMP_POWER = 5.0f;
     bool isInAir = false;
     const float GRAVITY = -9.81f;
@@ -39,27 +35,9 @@ private:
 
 public:
     Player(Model model, float rotX, float rotY, float rotZ, float scale, PxController* characterController)
-        : model(model), characterController(characterController), rotX(rotX), rotY(rotY), rotZ(rotZ), scale(scale), velocity(0.0f, 0.0f, 0.0f)
+        : model(model), characterController(characterController), velocity(0.0f, 0.0f, 0.0f)
     {
         this->position = PxVec3(characterController->getPosition().x, characterController->getPosition().y, characterController->getPosition().z);
-        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        modelMatrix = rotation * modelMatrix;
-    }
-
-    float getScale() const {
-        return scale;
-    }
-
-    float getRotX() const {
-        return rotX;
-    }
-
-    float getRotY() const {
-        return rotY;
-    }
-
-    float getRotZ() const {
-        return rotZ;
     }
 
     glm::vec3 getPosition() const {
@@ -76,11 +54,11 @@ public:
         PxQuat orientation = transform.q;
         PxVec3 playerPos = transform.p;
 
-        glm::vec3 glmPosition(playerPos.x, playerPos.y, playerPos.z);
+        glm::vec3 glmPosition(playerPos.x, playerPos.y - 1.57296f, playerPos.z);
         position = playerPos;
         glm::quat glmOrientation(orientation.w, orientation.x, orientation.y, orientation.z);
 
-        modelMatrix = glm::translate(glm::mat4(1.0f), glmPosition) * glm::toMat4(glmOrientation);
+        modelMatrix = glm::translate(glm::mat4(1.0f), glmPosition);
     }
 
     void Draw(std::shared_ptr<Shader> shader) {
@@ -89,25 +67,32 @@ public:
         this->model.Draw(shader);
     }
 
-    void set(Model model, float rotX, float rotY, float rotZ, float scale) {
+    void set(Model model) {
         this->model = model;
         this->position = PxVec3(characterController->getPosition().x, characterController->getPosition().y, characterController->getPosition().z);
-        this->rotX = rotX;
-        this->rotY = rotY;
-        this->rotZ = rotZ;
-        this->scale = scale;
+        
     }
 
-    void updateRotation(glm::vec3 cameraDirection) {
-        cameraDirection = glm::normalize(cameraDirection);
-        float yaw = atan2(cameraDirection.y, cameraDirection.x);
-        float pitch = asin(-cameraDirection.z);
-        glm::quat yawQuat = glm::angleAxis(yaw, glm::vec3(0.0f, 0.0f, 1.0f));
-        glm::quat pitchQuat = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
-        glm::quat rotationQuat = yawQuat * pitchQuat;
-        glm::vec3 eulerAngles = glm::eulerAngles(rotationQuat);
-        float finalYaw = eulerAngles.z;
-        rotY = finalYaw;
+    void updatePlayerRotation(PxController* controller, glm::vec3 camDir) {
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+        glm::vec3 right = glm::normalize(glm::cross(up, camDir));
+        glm::vec3 forward = glm::normalize(glm::cross(right, up));
+
+        glm::mat4 rotationMatrix = glm::mat4(1.0f);
+        rotationMatrix[0] = glm::vec4(right, 0.0f);
+        rotationMatrix[2] = glm::vec4(forward, 0.0f);
+
+        glm::quat rotationQuaternion = glm::quat_cast(rotationMatrix);
+        PxQuat pxRotationQuaternion(rotationQuaternion.x, rotationQuaternion.y, rotationQuaternion.z, rotationQuaternion.w);
+
+        setPlayerRotation(controller, pxRotationQuaternion);
+    }
+
+    void setPlayerRotation(PxController* controller, const PxQuat& rotation) {
+        PxTransform currentTransform = controller->getActor()->getGlobalPose();
+        currentTransform.q = rotation;
+        controller->getActor()->setGlobalPose(currentTransform);
     }
 
     void checkInputs(GLFWwindow* window, float delta, glm::vec3 direction) {
