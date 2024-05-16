@@ -1,0 +1,34 @@
+# Blender 4.1.1 MTL File: 'maze.blend'
+# www.blender.org
+
+newmtl Lava
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:/Lava_06_basecolor.jpg
+map_Ns C:/Lava_06_roughness.jpg
+map_refl C:/Lava_06_metallic.jpg
+map_Ke C:/Users/olive/Desktop/UNI/SS24/Programmiertechniken/PVC_SS24/GL_Task_6_Code/assets/geometry/diamond/diamond.png
+
+newmtl Material.001
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 0.679543 0.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+
+newmtl dirt_floor
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:/dirt_floor_diff_8k.jpg
+map_Ns C:/dirt_floor_rough_8k.exr
+map_Bump -bm 1.000000 C:/dirt_floor_nor_gl_8k.exr
