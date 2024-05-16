@@ -10,7 +10,6 @@ illum 2
 map_Kd C:/Lava_06_basecolor.jpg
 map_Ns C:/Lava_06_roughness.jpg
 map_refl C:/Lava_06_metallic.jpg
-map_Ke C:/Users/olive/Desktop/UNI/SS24/Programmiertechniken/PVC_SS24/GL_Task_6_Code/assets/geometry/diamond/diamond.png
 
 newmtl Material.001
 Ns 250.000000

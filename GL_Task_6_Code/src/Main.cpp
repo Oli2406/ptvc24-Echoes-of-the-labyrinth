@@ -236,7 +236,7 @@ int main(int argc, char** argv) {
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
         std::shared_ptr<Texture> torchTexture = std::make_shared<Texture>("assets/textures/torch.dds");
-        DDSImage img = loadDDS(gcgFindTextureFile("assets/textures/wood_texture.dds").c_str());
+        DDSImage img = loadDDS(gcgFindTextureFile("assets/textures/Militia-Texture.dds").c_str());
         GLuint texture3;
         glGenTextures(1, &texture3);
         glBindTexture(GL_TEXTURE_2D, texture3);
