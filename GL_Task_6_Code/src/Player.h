@@ -102,16 +102,16 @@ public:
         PxVec3 displacement(0.0f, 0.0f, 0.0f);
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            displacement += PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * delta;
+            displacement += (PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * delta) * 4;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            displacement += PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * delta;
+            displacement += (PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * delta) * 4;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            displacement += PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * delta;
+            displacement += (PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * delta) * 4;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            displacement += PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * delta;
+            displacement += (PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * delta) * 4;
         }
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !isInAir) {

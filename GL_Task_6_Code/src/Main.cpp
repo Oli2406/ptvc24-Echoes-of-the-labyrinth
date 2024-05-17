@@ -44,6 +44,7 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& dirL, PointLight& pointL);
 void renderQuad();
 void initPhysics();
+void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4);
 
 /* --------------------------------------------- */
 // Global variables
@@ -62,6 +63,11 @@ static float _zoom = 5.0f;
 ArcCamera camera;
 bool firstMouse = true;
 static float PI = 3.14159265358979;
+
+bool key1Found = false;
+bool key2Found = false;
+bool key3Found = false;
+bool key4Found = false;
 
 
 
@@ -233,6 +239,8 @@ int main(int argc, char** argv) {
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
         std::shared_ptr<Texture> torchTexture = std::make_shared<Texture>("assets/textures/torch.dds");
+        std::shared_ptr<Texture> keyTexture = std::make_shared<Texture>("assets/textures/gelb.dds");
+
         DDSImage img = loadDDS(gcgFindTextureFile("assets/textures/Militia-Texture.dds").c_str());
         GLuint texture3;
         glGenTextures(1, &texture3);
@@ -255,6 +263,7 @@ int main(int argc, char** argv) {
         std::shared_ptr<Material> torchTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, torchTexture);
         std::shared_ptr<Material> fireShadow = std::make_shared<TextureMaterial>(depthShader, glm::vec3(0.1f, 0.7f, 0.1f), 2.0f, fireTexture);
         std::shared_ptr<Material> torchShadow = std::make_shared<TextureMaterial>(depthShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, torchTexture);
+        std::shared_ptr<Material> keyColor = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, keyTexture);
 
         // Create geometry
         Geometry fire = Geometry(
@@ -279,6 +288,12 @@ int main(int argc, char** argv) {
             glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 0)), glm::vec3(1.0f, 3.0f, 1.0f)),
             Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
             torchShadow
+        );
+
+        Geometry keyCube = Geometry(
+            glm::translate(glm::mat4(1), glm::vec3(0, 0, 0)),
+            Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
+            keyColor
         );
 
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
@@ -340,8 +355,10 @@ int main(int argc, char** argv) {
         float alpha = 1.0f;
         float prevAngle = 0.0f;
 
-        glm::mat4 key1 = glm::mat4(1.0f);
-        key1 = glm::translate(key1, glm::vec3(10, 10, 10));
+        glm::vec3 key1 = glm::vec3(11, 1.3f, 11.5f);
+        glm::vec3 key2 = glm::vec3(-11, 1.3f, -11.5f);
+        glm::vec3 key3 = glm::vec3(-11, 1.3f, 11.5f);
+        glm::vec3 key4 = glm::vec3(11.3, 1.3f, -11.7f);
 
         // configure depth map FBO
         // -----------------------
@@ -407,14 +424,12 @@ int main(int argc, char** argv) {
             player1.Draw(depthShader);
             depthShader->setUniform("modelMatrix", model);
             floor.Draw(depthShader);
-            map.Draw(depthShader);
+            //map.Draw(depthShader);
             depthShader->setUniform("modelMatrix", podestModel);
             podest.Draw(depthShader);
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(depthShader);
-            depthShader->setUniform("modelMatrix", key1);
-            key.Draw(depthShader);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
             // reset viewport
@@ -457,15 +472,37 @@ int main(int argc, char** argv) {
 
             modelShader->setUniform("modelMatrix", podestModel);
 
-            podest.Draw(modelShader);
+            //podest.Draw(modelShader);
 
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
 
             modelShader->setUniform("modelMatrix", modelDiamiond);
-            diamond.Draw(modelShader);
+            //diamond.Draw(modelShader);
 
-            modelShader->setUniform("modelMatrix", key1);
-            key.Draw(modelShader);
+            keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key1));
+
+            if (!key1Found) {
+                keyCube.draw();
+            }
+            keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key2));
+
+            if (!key2Found) {
+                keyCube.draw();
+            }
+
+            keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key3));
+
+            if (!key3Found) {
+                keyCube.draw();
+            }
+
+            keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key4));
+
+            if (!key4Found) {
+                keyCube.draw();
+            }
+
+            gameplay(player1.getPosition(), key1, key2, key3, key4);
             
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
             textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
@@ -515,6 +552,27 @@ int main(int argc, char** argv) {
     glfwTerminate();
 
     return EXIT_SUCCESS;
+}
+
+void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4) {
+    float x = playerPosition.x;
+    float y = playerPosition.y;
+    float z = playerPosition.z;
+    if (x < key1.x + 0.2 && x > key1.x - 0.2 && z < key1.z + 0.2 && z > key1.z - 0.2) {
+        key1Found = true;
+    }
+
+    if (x < key2.x + 0.2 && x > key2.x - 0.2 && z < key2.z + 0.2 && z > key2.z - 0.2) {
+        key2Found = true;
+    }
+
+    if (x < key3.x + 0.2 && x > key3.x - 0.2 && z < key3.z + 0.2 && z > key3.z - 0.2) {
+        key3Found = true;
+    }
+
+    if (x < key4.x + 0.2 && x > key4.x - 0.2 && z < key4.z + 0.2 && z > key4.z - 0.2) {
+        key4Found = true;
+    }
 }
 
 // renderQuad() renders a 1x1 XY quad in NDC
