@@ -43,9 +43,6 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos);
 void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& dirL, PointLight& pointL);
 void renderQuad();
-void renderScene(const std::shared_ptr<Shader> shader);
-void renderCube();
-unsigned int loadTexture(const char* path);
 void initPhysics();
 
 /* --------------------------------------------- */
@@ -300,8 +297,8 @@ int main(int argc, char** argv) {
         string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.obj");
         Model adventurer(&path4[0], gPhysics, gScene, true);
 
-        //diamond.printNormals();
-
+        string path5 = gcgFindTextureFile("assets/geometry/key/key.obj");
+        Model key(&path5[0], gPhysics, gScene, false);
 
         //Physics simulation;
         Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getController());
@@ -342,6 +339,9 @@ int main(int argc, char** argv) {
         glm::vec3 materialCoefficients = glm::vec3(0.1f, 0.7f, 0.1f);
         float alpha = 1.0f;
         float prevAngle = 0.0f;
+
+        glm::mat4 key1 = glm::mat4(1.0f);
+        key1 = glm::translate(key1, glm::vec3(10, 10, 10));
 
         // configure depth map FBO
         // -----------------------
@@ -413,6 +413,8 @@ int main(int argc, char** argv) {
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(depthShader);
+            depthShader->setUniform("modelMatrix", key1);
+            key.Draw(depthShader);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
             // reset viewport
@@ -461,6 +463,9 @@ int main(int argc, char** argv) {
 
             modelShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(modelShader);
+
+            modelShader->setUniform("modelMatrix", key1);
+            key.Draw(modelShader);
             
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
             textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
@@ -510,46 +515,6 @@ int main(int argc, char** argv) {
     glfwTerminate();
 
     return EXIT_SUCCESS;
-}
-
-
-// utility function for loading a 2D texture from file
-// ---------------------------------------------------
-unsigned int loadTexture(char const* path)
-{
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height, nrComponents;
-    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        GLenum format;
-        if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
-        stbi_image_free(data);
-    }
-
-    return textureID;
 }
 
 // renderQuad() renders a 1x1 XY quad in NDC
