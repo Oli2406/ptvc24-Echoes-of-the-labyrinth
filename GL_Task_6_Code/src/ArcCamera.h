@@ -40,15 +40,14 @@ public:
 	mat4 calculateMatrix(float radius, float pitch, float yaw, Player& player) {
 		//compute camera Position with Euler Angles
 		float x = radius * sin(yaw) * cos(pitch) - player.getPosition().x;
-		float y = radius * sin(pitch) + player.getPosition().y - 1.57296f;
+		float y = radius * sin(pitch) + player.getPosition().y - 1.0f;
 		float z = radius * cos(yaw) * cos(pitch) + player.getPosition().z;
 		vec3 position(-x, y, z);
 		pos = position;
 		mat4 viewMatrix = translate(mat4(1.0f), position);
 		viewMatrix = glm::rotate(viewMatrix, yaw, vec3(0.0f, -1.0f, 0.0f));
-		viewMatrix = glm::rotate(viewMatrix, pitch, vec3(-1.0f, 0.0f, 0.0f)); //glm because ArcCamera::rotate must not be called here
+		viewMatrix = glm::rotate(viewMatrix, pitch, vec3(-1.0f, 0.0f, 0.0f));
 		viewMatrix = inverse(viewMatrix);
-		//translate, rotate and inverse to compute new viewMatrix.
 		return viewMatrix;
 	}
 
@@ -59,7 +58,6 @@ public:
 	}
 
 
-	//getters used for modifying viewMatrix in Renderloop.
 	float getRadius() {
 		return radius;
 	}
@@ -77,10 +75,8 @@ public:
 	}
 
 	void rotate(float xoffset, float yoffset, float sensitivity = 0.005f) {
-		//uses x and y offset to calculate new pitch and yaw.
 		pitch += xoffset * sensitivity;
 		yaw += yoffset * sensitivity;
-		//clamp to nearly 90 degrees to avoid camera inversion.
 		pitch = glm::clamp(pitch, radians(-89.0f), radians(89.0f));
 	}
 
@@ -88,6 +84,6 @@ public:
 	void zoom(float yoffset) {
 		//Calculate the zoom and limit it.
 		radius -= yoffset;
-		radius = glm::clamp(radius, 0.0f, 100.0f);
+		radius = glm::clamp(radius, 2.0f, 5.0f);
 	}
 };

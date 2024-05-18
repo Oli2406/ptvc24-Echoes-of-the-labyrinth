@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
         string path1 = gcgFindTextureFile("assets/geometry/podest/podest.obj");
         Model podest(&path1[0], gPhysics, gScene, false);
 
-        string path2 = gcgFindTextureFile("assets/geometry/floor/maze.obj");
+        string path2 = gcgFindTextureFile("assets/geometry/floor/floor.obj");
         Model floor(&path2[0], gPhysics, gScene, false);
 
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
