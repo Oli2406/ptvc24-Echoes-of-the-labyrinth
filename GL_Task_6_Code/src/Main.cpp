@@ -362,7 +362,7 @@ int main(int argc, char** argv) {
 
         // configure depth map FBO
         // -----------------------
-        const unsigned int SHADOW_WIDTH = window_width, SHADOW_HEIGHT = window_height;
+        const unsigned int SHADOW_WIDTH = 16384, SHADOW_HEIGHT = 8192;
         unsigned int depthMapFBO;
         glGenFramebuffers(1, &depthMapFBO);
         // create depth texture
@@ -406,7 +406,7 @@ int main(int argc, char** argv) {
 
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
-            float near_plane = 0.1f, far_plane = 75.0f;
+            float near_plane = 0.1f, far_plane = 100.0f;
             lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
             lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
@@ -424,7 +424,7 @@ int main(int argc, char** argv) {
             player1.Draw(depthShader);
             depthShader->setUniform("modelMatrix", model);
             floor.Draw(depthShader);
-            //map.Draw(depthShader);
+            map.Draw(depthShader);
             depthShader->setUniform("modelMatrix", podestModel);
             podest.Draw(depthShader);
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -472,12 +472,12 @@ int main(int argc, char** argv) {
 
             modelShader->setUniform("modelMatrix", podestModel);
 
-            //podest.Draw(modelShader);
+            podest.Draw(modelShader);
 
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
 
             modelShader->setUniform("modelMatrix", modelDiamiond);
-            //diamond.Draw(modelShader);
+            diamond.Draw(modelShader);
 
             keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key1));
 

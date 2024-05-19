@@ -54,7 +54,7 @@ public:
         PxQuat orientation = transform.q;
         PxVec3 playerPos = transform.p;
 
-        glm::vec3 glmPosition(playerPos.x, playerPos.y - 1.57296f, playerPos.z);
+        glm::vec3 glmPosition(playerPos.x, playerPos.y - 1.5f, playerPos.z);
         position = playerPos;
         glm::quat glmOrientation(orientation.w, orientation.x, orientation.y, orientation.z);
 
