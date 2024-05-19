@@ -20,6 +20,9 @@
 
 #include <filesystem>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H  
+
 
 #undef min
 #undef max
@@ -45,6 +48,7 @@ void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& di
 void renderQuad();
 void initPhysics();
 void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4);
+void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float y, float scale, glm::vec3 color);
 
 /* --------------------------------------------- */
 // Global variables
@@ -69,6 +73,8 @@ bool key2Found = false;
 bool key3Found = false;
 bool key4Found = false;
 
+bool won = false;
+
 
 
 
@@ -89,6 +95,18 @@ PxPvd* gPvd = nullptr;
 //PxScene* scene = PhysXInitializer::createPhysXScene(physics);
 // meshes
 unsigned int planeVAO;
+
+/// Holds all state information relevant to a character as loaded using FreeType
+struct Character {
+    unsigned int TextureID; // ID handle of the glyph texture
+    glm::ivec2   Size;      // Size of glyph
+    glm::ivec2   Bearing;   // Offset from baseline to left/top of glyph
+    unsigned int Advance;   // Horizontal offset to advance to next glyph
+};
+
+std::map<GLchar, Character> Characters;
+unsigned int VAO, VBO;
+float startTime = 0.0f;
 
 
 /* --------------------------------------------- */
@@ -191,9 +209,6 @@ int main(int argc, char** argv) {
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     }
 
-
-
-
     /* --------------------------------------------- */
     // Init framework
     /* --------------------------------------------- */
@@ -223,6 +238,9 @@ int main(int argc, char** argv) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     initPhysics();
 
     /* --------------------------------------------- */
@@ -235,6 +253,7 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> modelShader = std::make_shared<Shader>("assets/shaders/model.vert", "assets/shaders/model.frag");
         std::shared_ptr<Shader> sky = std::make_shared<Shader>("assets/shaders/sky.vert", "assets/shaders/sky.frag");
         std::shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>("assets/shaders/debugDepthQuad.vert", "assets/shaders/debugDepthQuad.frag");
+        std::shared_ptr<Shader> fontShader = std::make_shared<Shader>("assets/shaders/font.vert", "assets/shaders/font.frag");
 
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
@@ -292,7 +311,7 @@ int main(int argc, char** argv) {
 
         Geometry keyCube = Geometry(
             glm::translate(glm::mat4(1), glm::vec3(0, 0, 0)),
-            Geometry::createCubeGeometry(0.34f, 0.34f, 0.34f),
+            Geometry::createCubeGeometry(2, 2, 2),
             keyColor
         );
 
@@ -355,10 +374,10 @@ int main(int argc, char** argv) {
         float alpha = 1.0f;
         float prevAngle = 0.0f;
 
-        glm::vec3 key1 = glm::vec3(11, 1.3f, 11.5f);
-        glm::vec3 key2 = glm::vec3(-11, 1.3f, -11.5f);
-        glm::vec3 key3 = glm::vec3(-11, 1.3f, 11.5f);
-        glm::vec3 key4 = glm::vec3(11.3, 1.3f, -11.7f);
+        glm::vec3 key1 = glm::vec3(10, 5, 10);
+        glm::vec3 key2 = glm::vec3(-10, 5, -10);
+        glm::vec3 key3 = glm::vec3(-10, 5, 10);
+        glm::vec3 key4 = glm::vec3(10, 5, -10);
 
         // configure depth map FBO
         // -----------------------
@@ -374,7 +393,7 @@ int main(int argc, char** argv) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        float borderColor[] = {1.0, 1.0, 1.0, 1.0};
+        float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
         // attach depth texture as FBO's depth buffer
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -383,9 +402,101 @@ int main(int argc, char** argv) {
         glReadBuffer(GL_NONE);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+        // text rendering
+
+
+        // FreeType
+    // --------
+        FT_Library ft;
+        // All functions return a value different than 0 whenever an error occurred
+        if (FT_Init_FreeType(&ft))
+        {
+            std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+            return -1;
+        }
+
+        // find path to font
+        std::string font_name = gcgFindTextureFile("assets/fonts/Rockers_Garage.ttf");
+        if (font_name.empty())
+        {
+            std::cout << "ERROR::FREETYPE: Failed to load font_name" << std::endl;
+            return -1;
+        }
+
+        // load font as face
+        FT_Face face;
+        if (FT_New_Face(ft, font_name.c_str(), 0, &face)) {
+            std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+            return -1;
+        }
+        else {
+            // set size to load glyphs as
+            FT_Set_Pixel_Sizes(face, 0, 48);
+
+            // disable byte-alignment restriction
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+            // load first 128 characters of ASCII set
+            for (unsigned char c = 0; c < 128; c++)
+            {
+                // Load character glyph 
+                if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+                {
+                    std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+                    continue;
+                }
+                // generate texture
+                unsigned int texture;
+                glGenTextures(1, &texture);
+                glBindTexture(GL_TEXTURE_2D, texture);
+                glTexImage2D(
+                    GL_TEXTURE_2D,
+                    0,
+                    GL_RED,
+                    face->glyph->bitmap.width,
+                    face->glyph->bitmap.rows,
+                    0,
+                    GL_RED,
+                    GL_UNSIGNED_BYTE,
+                    face->glyph->bitmap.buffer
+                );
+                // set texture options
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                // now store character for later use
+                Character character = {
+                    texture,
+                    glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+                    glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                    static_cast<unsigned int>(face->glyph->advance.x)
+                };
+                Characters.insert(std::pair<char, Character>(c, character));
+            }
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+        // destroy FreeType once we're finished
+        FT_Done_Face(face);
+        FT_Done_FreeType(ft);
+
+
+        // configure VAO/VBO for texture quads
+        // -----------------------------------
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
 
         // shader configuration
-        // --------------------
+        // --------------------   
+
         textureShader->use();
         textureShader->setUniform("shadowMap", 2);
         modelShader->use();
@@ -394,6 +505,7 @@ int main(int argc, char** argv) {
         modelShader->setUniform("shadowMap", 2);
         debugDepthQuad->use();
         debugDepthQuad->setUniform("depthMap", 0);
+        
 
         // lighting info
         // -------------
@@ -413,6 +525,7 @@ int main(int argc, char** argv) {
             // render scene from light's point of view
             depthShader->use();
             depthShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            
 
             glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
             glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -420,8 +533,8 @@ int main(int argc, char** argv) {
 
             fireShad.draw();
             torchShad.draw();
-            
-            player1.Draw(depthShader, camDir);
+
+            /*player1.Draw(depthShader, camDir);
             depthShader->setUniform("modelMatrix", model);
             floor.Draw(depthShader);
             map.Draw(depthShader);
@@ -429,7 +542,8 @@ int main(int argc, char** argv) {
             podest.Draw(depthShader);
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
-            diamond.Draw(depthShader);
+            diamond.Draw(depthShader);*/
+            
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
             // reset viewport
@@ -437,6 +551,7 @@ int main(int argc, char** argv) {
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+           
             modelShader->use();
 
             glfwPollEvents();
@@ -457,7 +572,7 @@ int main(int argc, char** argv) {
             glBindTexture(GL_TEXTURE_2D, depthMap);
 
             player1.checkInputs(window, dt, camDir);
-            
+
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture3);
@@ -502,7 +617,8 @@ int main(int argc, char** argv) {
             }
 
             gameplay(player1.getPosition(), key1, key2, key3, key4);
-            
+
+
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
             textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
             textureShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
@@ -519,13 +635,38 @@ int main(int argc, char** argv) {
             torchShad.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
 
             pointL.position = player1.getPosition() + glm::vec3(0.4f, 1.5f, 0.0f);
-            
+
             gScene->simulate(dt);
             gScene->fetchResults(true);
-            
+
             sky->use();
             sky->setUniform("viewProjMatrix", viewProjectionMatrix);
             skybox.draw();
+            
+
+            if (won) {
+                glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window_width), 0.0f, static_cast<float>(window_height));
+                fontShader->use();
+                fontShader->setUniform("projection", projection);
+
+                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                RenderText(fontShader, "You Won!", 480.0f, 500.0f, 5.0f, glm::vec3(0.5, 0.8f, 0.2f));
+
+                if (startTime == 0.0f) {
+                    // Startzeit setzen
+                    startTime = glfwGetTime();
+                }
+
+                float currentTime = glfwGetTime();
+                if (currentTime - startTime >= 5.0f) {
+                    // Aktion nach 10 Sekunden
+                    std::cout << "10 seconds have passed!" << std::endl;
+                    break;  // Beenden Sie die Schleife oder führen Sie eine andere Aktion aus
+                }
+               
+            }
 
             // Compute frame time
             dt = t;
@@ -553,6 +694,53 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
+// render line of text
+// -------------------
+void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float y, float scale, glm::vec3 color)
+{
+    // activate corresponding render state	
+    shader->use();
+    glUniform3f(glGetUniformLocation(shader->getHandle(), "textColor"), color.x, color.y, color.z);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(VAO);
+
+    // iterate through all characters
+    std::string::const_iterator c;
+    for (c = text.begin(); c != text.end(); c++)
+    {
+        Character ch = Characters[*c];
+
+        float xpos = x + ch.Bearing.x * scale;
+        float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+
+        float w = ch.Size.x * scale;
+        float h = ch.Size.y * scale;
+        // update VBO for each character
+        float vertices[6][4] = {
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos,     ypos,       0.0f, 1.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+            { xpos + w, ypos + h,   1.0f, 0.0f }
+        };
+        // render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+        // update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+    }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4) {
     float x = playerPosition.x;
     float y = playerPosition.y;
@@ -571,6 +759,10 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
 
     if (x < key4.x + 0.2 && x > key4.x - 0.2 && z < key4.z + 0.2 && z > key4.z - 0.2) {
         key4Found = true;
+    }
+
+    if (x < 0 + 1.2 && x > 0 - 1.2 && z < 0 + 1.2 && z > 0 - 1.2) {
+        won = true;
     }
 }
 

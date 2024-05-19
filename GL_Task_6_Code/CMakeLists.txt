@@ -37,6 +37,7 @@ set(LINK_LIBRARIES
     debug glew32sd optimized glew32s
     debug GCG_GL_Lib_Debug optimized GCG_GL_Lib_Release
     debug assimp-vc143-mtd optimized assimp-vc143-mtd
+    debug freetype optimized freetype
     debug BulletCollision_Debug optimized BulletCollision_RelWithDebugInfo
     debug BulletDynamics_Debug optimized BulletDynamics_RelWithDebugInfo
     debug LinearMath_Debug optimized LinearMath_RelWithDebugInfo
