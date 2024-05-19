@@ -49,20 +49,27 @@ public:
         return model;
     }
 
-    void updateModelMatrix() {
+    void updateModelMatrix(glm::vec3 camDir) {
         PxTransform transform = characterController->getActor()->getGlobalPose();
-        PxQuat orientation = transform.q;
         PxVec3 playerPos = transform.p;
 
-        glm::vec3 glmPosition(playerPos.x, playerPos.y - 1.5f, playerPos.z);
-        position = playerPos;
-        glm::quat glmOrientation(orientation.w, orientation.x, orientation.y, orientation.z);
+        glm::vec3 forward = glm::normalize(glm::vec3(camDir.x, 0.0f, camDir.z));
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+        glm::vec3 right = glm::normalize(glm::cross(up, forward));
 
-        modelMatrix = glm::translate(glm::mat4(1.0f), glmPosition);
+        glm::mat4 rotationMatrix(1.0f);
+        rotationMatrix[0] = glm::vec4(right, 0.0f);
+        rotationMatrix[1] = glm::vec4(up, 0.0f);
+        rotationMatrix[2] = glm::vec4(forward, 0.0f);
+
+        glm::vec3 glmPosition(playerPos.x, playerPos.y - 1.5f, playerPos.z);
+
+        modelMatrix = glm::translate(glm::mat4(1.0f), glmPosition) * rotationMatrix;
     }
 
-    void Draw(std::shared_ptr<Shader> shader) {
-        this->updateModelMatrix();
+
+    void Draw(std::shared_ptr<Shader> shader, glm::vec3 camDir) {
+        this->updateModelMatrix(camDir);
         shader->setUniform("modelMatrix", modelMatrix);
         this->model.Draw(shader);
     }
@@ -74,13 +81,14 @@ public:
     }
 
     void updatePlayerRotation(PxController* controller, glm::vec3 camDir) {
+        glm::vec3 forward = glm::normalize(camDir);
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+        glm::vec3 right = glm::normalize(glm::cross(up, forward));
+        up = glm::cross(forward, right);
 
-        glm::vec3 right = glm::normalize(glm::cross(up, camDir));
-        glm::vec3 forward = glm::normalize(glm::cross(right, up));
-
-        glm::mat4 rotationMatrix = glm::mat4(1.0f);
+        glm::mat4 rotationMatrix(1.0f);
         rotationMatrix[0] = glm::vec4(right, 0.0f);
+        rotationMatrix[1] = glm::vec4(up, 0.0f);
         rotationMatrix[2] = glm::vec4(forward, 0.0f);
 
         glm::quat rotationQuaternion = glm::quat_cast(rotationMatrix);
@@ -102,16 +110,16 @@ public:
         PxVec3 displacement(0.0f, 0.0f, 0.0f);
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            displacement += (PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * delta) * 4;
+            displacement += (PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * delta) * 2;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            displacement += (PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * delta) * 4;
+            displacement += (PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * delta) * 2;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            displacement += (PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * delta) * 4;
+            displacement += (PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * delta) * 2;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            displacement += (PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * delta) * 4;
+            displacement += (PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * delta) * 2;
         }
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !isInAir) {

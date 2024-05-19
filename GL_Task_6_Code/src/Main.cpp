@@ -421,7 +421,7 @@ int main(int argc, char** argv) {
             fireShad.draw();
             torchShad.draw();
             
-            player1.Draw(depthShader);
+            player1.Draw(depthShader, camDir);
             depthShader->setUniform("modelMatrix", model);
             floor.Draw(depthShader);
             map.Draw(depthShader);
@@ -456,14 +456,13 @@ int main(int argc, char** argv) {
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, depthMap);
 
-            player1.updatePlayerRotation(adventurer.getController(), camDir);
             player1.checkInputs(window, dt, camDir);
             
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture3);
 
-            player1.Draw(modelShader);
+            player1.Draw(modelShader, camDir);
 
             modelShader->setUniform("modelMatrix", model);
 
