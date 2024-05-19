@@ -332,7 +332,10 @@ int main(int argc, char** argv) {
         Model adventurer(&path4[0], gPhysics, gScene, true);
 
         string path5 = gcgFindTextureFile("assets/geometry/key/key.obj");
-        Model key(&path5[0], gPhysics, gScene, false);
+        //Model key(&path5[0], gPhysics, gScene, false);
+
+        string path6 = gcgFindTextureFile("assets/geometry/bridge/bridge.obj");
+        Model bridge(&path6[0], gPhysics, gScene, false);
 
         //Physics simulation;
         Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getController());
@@ -353,6 +356,9 @@ int main(int argc, char** argv) {
 
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+
+        glm::mat4 brid = glm::mat4(1.0f);
+        brid = glm::translate(brid, glm::vec3(-0.3f, 0.3f, 0.0f));
 
         glm::mat4 modelDiamiond = glm::mat4(1.0f);
         modelDiamiond = glm::translate(modelDiamiond, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -617,6 +623,11 @@ int main(int argc, char** argv) {
             }
 
             gameplay(player1.getPosition(), key1, key2, key3, key4);
+
+            if (key1Found && key2Found && key3Found && key4Found) {
+                modelShader->setUniform("modelMatrix", brid);
+                bridge.Draw(modelShader);
+            }
 
 
             setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
