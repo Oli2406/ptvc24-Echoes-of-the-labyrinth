@@ -110,16 +110,16 @@ public:
         PxVec3 displacement(0.0f, 0.0f, 0.0f);
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            displacement += (PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * delta) * 2;
+            displacement += (PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * delta) * 5;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            displacement += (PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * delta) * 2;
+            displacement += (PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * delta) * 5;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            displacement += (PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * delta) * 2;
+            displacement += (PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * delta) * 5;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            displacement += (PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * delta) * 2;
+            displacement += (PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * delta) * 5;
         }
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !isInAir) {
@@ -131,7 +131,7 @@ public:
             velocity.y += GRAVITY * delta;
         }
 
-        if (position.y < -5.0f) {
+        if (characterController->getActor()->getGlobalPose().p.y < -5.0f) {
             characterController->setPosition(PxExtendedVec3(5, 2, 5));
         }
 

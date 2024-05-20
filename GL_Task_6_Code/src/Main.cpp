@@ -332,7 +332,7 @@ int main(int argc, char** argv) {
         Model adventurer(&path4[0], gPhysics, gScene, true);
 
         string path5 = gcgFindTextureFile("assets/geometry/key/key.obj");
-        //Model key(&path5[0], gPhysics, gScene, false);
+        Model key(&path5[0], gPhysics, gScene, false);
 
         string path6 = gcgFindTextureFile("assets/geometry/bridge/bridge.obj");
         Model bridge(&path6[0], gPhysics, gScene, false);
@@ -357,10 +357,6 @@ int main(int argc, char** argv) {
         float t_sum = 0.0f;
         float dt = 0.0f;
 
-
-        glm::mat4 brid = glm::mat4(1.0f);
-        brid = glm::translate(brid, glm::vec3(-0.3f, 0.3f, 0.0f));
-
         glm::mat4 modelDiamiond = glm::mat4(1.0f);
         modelDiamiond = glm::translate(modelDiamiond, glm::vec3(0.0f, 0.0f, 0.0f));
 
@@ -379,10 +375,10 @@ int main(int argc, char** argv) {
         float alpha = 1.0f;
         float prevAngle = 0.0f;
 
-        glm::vec3 key1 = glm::vec3(10, 2, 10);
-        glm::vec3 key2 = glm::vec3(-10, 2, -10);
-        glm::vec3 key3 = glm::vec3(-10, 2, 10);
-        glm::vec3 key4 = glm::vec3(10, 2, -10);
+        glm::vec3 key1 = glm::vec3(9, 1, 9);
+        glm::vec3 key2 = glm::vec3(-9, 1, -9);
+        glm::vec3 key3 = glm::vec3(-9, 1, 9);
+        glm::vec3 key4 = glm::vec3(9, 1, -9);
 
         // configure depth map FBO
         // -----------------------
@@ -411,9 +407,9 @@ int main(int argc, char** argv) {
 
 
         // FreeType
-    // --------
+        // --------
         FT_Library ft;
-        // All functions return a value different than 0 whenever an error occurred
+        
         if (FT_Init_FreeType(&ft))
         {
             std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
@@ -527,7 +523,6 @@ int main(int argc, char** argv) {
             lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
             lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
-            // render scene from light's point of view
             depthShader->use();
             depthShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
             
@@ -601,34 +596,32 @@ int main(int argc, char** argv) {
 
             modelShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(modelShader);
-
-            keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key1));
-
+           
+            glm::mat4 keyModel = glm::translate(mat4(1.0f), key1);
             if (!key1Found) {
-                keyCube.draw();
+                modelShader->setUniform("modelMatrix", keyModel);
+                key.Draw(modelShader);
             }
-            keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key2));
-
+            keyModel = glm::translate(mat4(1.0f), key2);
             if (!key2Found) {
-                keyCube.draw();
+                modelShader->setUniform("modelMatrix", keyModel);
+                key.Draw(modelShader);
             }
-
-            keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key3));
-
+            keyModel = glm::translate(mat4(1.0f), key3);
             if (!key3Found) {
-                keyCube.draw();
+                modelShader->setUniform("modelMatrix", keyModel);
+                key.Draw(modelShader);
             }
-
-            keyCube.updateModelMatrix(glm::translate(glm::mat4(1.0f), key4));
-
+            keyModel = glm::translate(mat4(1.0f), key4);
             if (!key4Found) {
-                keyCube.draw();
+                modelShader->setUniform("modelMatrix", keyModel);
+                key.Draw(modelShader);
             }
 
             gameplay(player1.getPosition(), key1, key2, key3, key4);
 
             if (key1Found && key2Found && key3Found && key4Found) {
-                modelShader->setUniform("modelMatrix", brid);
+                modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
                 bridge.Draw(modelShader);
             }
 
@@ -656,7 +649,7 @@ int main(int argc, char** argv) {
             sky->use();
             sky->setUniform("viewProjMatrix", viewProjectionMatrix);
             skybox.draw();
-            
+
 
             if (won) {
                 glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window_width), 0.0f, static_cast<float>(window_height));
@@ -763,7 +756,7 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
         key1Found = true;
     }
 
-    if (x < key2.x + 0.2 && x > key2.x - 0.2 && z < key2.z + 0.2 && z > key2.z - 0.2) {
+    if (x < key2.x + 1 && x > key2.x - 0.2 && z < key2.z + 0.2 && z > key2.z - 0.2) {
         key2Found = true;
     }
 

@@ -1,9 +1,12 @@
 # Blender 4.1.1 MTL File: 'maze.blend'
 # www.blender.org
 
-Ka 1.000000 1.000000 1.000000
+newmtl Gold
+Ka 0.404545 0.404545 0.404545
+Kd 0.800000 0.769451 0.681937
 Ks 0.500000 0.500000 0.500000
-Ni 1.450000
+Ke 0.000000 0.000000 0.000000
+Ni 2.000000
 d 1.000000
-illum 2
-
+illum 3
+map_Kd key.jpg

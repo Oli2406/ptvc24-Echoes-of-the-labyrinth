@@ -7,7 +7,4 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd lava.png
-map_Ns C:/Lava_01_roughness-2K.jpg
-map_refl C:/Lava_01_metallic-2K.jpg
-map_Ke C:/Lava_01_emissive-2K.jpg
+map_Kd lava.jpg
