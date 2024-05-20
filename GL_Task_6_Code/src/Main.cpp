@@ -337,6 +337,9 @@ int main(int argc, char** argv) {
         string path6 = gcgFindTextureFile("assets/geometry/bridge/bridge.obj");
         Model bridge(&path6[0], gPhysics, gScene, false);
 
+        string path7 = gcgFindTextureFile("assets/geometry/lava/lava.obj");
+        Model lava(&path7[0]);
+
         //Physics simulation;
         Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getController());
 
@@ -354,8 +357,6 @@ int main(int argc, char** argv) {
         float t_sum = 0.0f;
         float dt = 0.0f;
 
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 
         glm::mat4 brid = glm::mat4(1.0f);
         brid = glm::translate(brid, glm::vec3(-0.3f, 0.3f, 0.0f));
@@ -363,8 +364,6 @@ int main(int argc, char** argv) {
         glm::mat4 modelDiamiond = glm::mat4(1.0f);
         modelDiamiond = glm::translate(modelDiamiond, glm::vec3(0.0f, 0.0f, 0.0f));
 
-        glm::mat4 podestModel = glm::mat4(1.0f);
-        podestModel = glm::translate(podestModel, glm::vec3(0.0f, 0.0f, 0.0f));
 
         mat4 viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
         glm::vec3 camDir = camera.getPos();
@@ -380,10 +379,10 @@ int main(int argc, char** argv) {
         float alpha = 1.0f;
         float prevAngle = 0.0f;
 
-        glm::vec3 key1 = glm::vec3(10, 5, 10);
-        glm::vec3 key2 = glm::vec3(-10, 5, -10);
-        glm::vec3 key3 = glm::vec3(-10, 5, 10);
-        glm::vec3 key4 = glm::vec3(10, 5, -10);
+        glm::vec3 key1 = glm::vec3(10, 2, 10);
+        glm::vec3 key2 = glm::vec3(-10, 2, -10);
+        glm::vec3 key3 = glm::vec3(-10, 2, 10);
+        glm::vec3 key4 = glm::vec3(10, 2, -10);
 
         // configure depth map FBO
         // -----------------------
@@ -540,15 +539,15 @@ int main(int argc, char** argv) {
             fireShad.draw();
             torchShad.draw();
 
-            /*player1.Draw(depthShader, camDir);
-            depthShader->setUniform("modelMatrix", model);
+            player1.Draw(depthShader, camDir);
+            depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             floor.Draw(depthShader);
             map.Draw(depthShader);
-            depthShader->setUniform("modelMatrix", podestModel);
+            depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             podest.Draw(depthShader);
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
-            diamond.Draw(depthShader);*/
+            diamond.Draw(depthShader);
             
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -585,14 +584,18 @@ int main(int argc, char** argv) {
 
             player1.Draw(modelShader, camDir);
 
-            modelShader->setUniform("modelMatrix", model);
+            modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
 
             floor.Draw(modelShader);
             map.Draw(modelShader);
 
-            modelShader->setUniform("modelMatrix", podestModel);
+            modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
 
             podest.Draw(modelShader);
+
+            modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
+
+            lava.Draw(modelShader);
 
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -660,21 +663,21 @@ int main(int argc, char** argv) {
                 fontShader->use();
                 fontShader->setUniform("projection", projection);
 
-                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT);
+                //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+                //glClear(GL_COLOR_BUFFER_BIT);
 
                 RenderText(fontShader, "You Won!", 480.0f, 500.0f, 5.0f, glm::vec3(0.5, 0.8f, 0.2f));
 
                 if (startTime == 0.0f) {
-                    // Startzeit setzen
+                    
                     startTime = glfwGetTime();
                 }
 
                 float currentTime = glfwGetTime();
                 if (currentTime - startTime >= 5.0f) {
-                    // Aktion nach 10 Sekunden
+                    
                     std::cout << "10 seconds have passed!" << std::endl;
-                    break;  // Beenden Sie die Schleife oder führen Sie eine andere Aktion aus
+                    break;
                 }
                
             }
@@ -736,17 +739,17 @@ void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float
             { xpos + w, ypos,       1.0f, 1.0f },
             { xpos + w, ypos + h,   1.0f, 0.0f }
         };
-        // render glyph texture over quad
+        
         glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-        // update content of VBO memory
+       
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // render quad
+      
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-        x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+        
+        x += (ch.Advance >> 6) * scale; 
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1057,5 +1060,5 @@ void initPhysics()
         std::cerr << "Failed to create ground plane." << std::endl;
         return;
     }
-    gScene->addActor(*groundPlane);
+    //gScene->addActor(*groundPlane);
 }

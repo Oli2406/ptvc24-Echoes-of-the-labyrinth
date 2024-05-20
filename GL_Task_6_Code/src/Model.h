@@ -132,7 +132,7 @@ public:
             this->controller = controllerManager->createController(desc);
 
             if (this->controller) {
-                this->controller->setPosition(PxExtendedVec3(2, 2, 2));
+                this->controller->setPosition(PxExtendedVec3(5, 2, 5));
             }
             else {
                 std::cerr << "Failed to create character controller" << std::endl;

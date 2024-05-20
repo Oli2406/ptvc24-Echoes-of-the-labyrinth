@@ -22,14 +22,14 @@ public:
     Skybox::Skybox() {
         float skyboxVertices[] =
         {
-            -250.0f, -250.0f,  250.0f,
-             250.0f, -250.0f,  250.0f,
-             250.0f, -250.0f, -250.0f,
-            -250.0f, -250.0f, -250.0f,
-            -250.0f,  250.0f,  250.0f,
-             250.0f,  250.0f,  250.0f,
-             250.0f,  250.0f, -250.0f,
-            -250.0f,  250.0f, -250.0f
+            -100.0f, -100.0f,  100.0f,
+             100.0f, -100.0f,  100.0f,
+             100.0f, -100.0f, -100.0f,
+            -100.0f, -100.0f, -100.0f,
+            -100.0f,  100.0f,  100.0f,
+             100.0f,  100.0f,  100.0f,
+             100.0f,  100.0f, -100.0f,
+            -100.0f,  100.0f, -100.0f
         };
 
         unsigned int skyboxIndices[] =
@@ -86,7 +86,7 @@ public:
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-        //glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
         for (unsigned int i = 0; i < 6; i++)
         {

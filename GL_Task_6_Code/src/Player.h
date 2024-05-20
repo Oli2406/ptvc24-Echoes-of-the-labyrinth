@@ -131,6 +131,10 @@ public:
             velocity.y += GRAVITY * delta;
         }
 
+        if (position.y < -5.0f) {
+            characterController->setPosition(PxExtendedVec3(5, 2, 5));
+        }
+
         displacement.y += velocity.y * delta;
 
         PxControllerCollisionFlags collisionFlags = characterController->move(displacement, 0.001f, delta, PxControllerFilters());
