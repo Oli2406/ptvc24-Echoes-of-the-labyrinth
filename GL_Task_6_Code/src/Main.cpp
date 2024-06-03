@@ -15,7 +15,6 @@
 #include "Skybox.h"
 #include "Player.h"
 #include "ArcCamera.h"
-//#include "physics/PhysXInitializer.h"
 #include "Geometry.h"
 
 #include <filesystem>
@@ -49,6 +48,7 @@ void renderQuad();
 void initPhysics();
 void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4, glm::vec3 key5, glm::vec3 key6, glm::vec3 key7, glm::vec3 key8);
 void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float y, float scale, glm::vec3 color);
+void setPBRProperties(Shader* shader, float metallic, float roughness, float ao);
 
 /* --------------------------------------------- */
 // Global variables
@@ -97,9 +97,7 @@ PxMaterial* gMaterial = nullptr;
 PxPvd* gPvd = nullptr;
 
 
-//PxPhysics* physics = PhysXInitializer::initializePhysX();
-//PxScene* scene = PhysXInitializer::createPhysXScene(physics);
-// meshes
+
 unsigned int planeVAO;
 
 /// Holds all state information relevant to a character as loaded using FreeType
@@ -260,6 +258,7 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> sky = std::make_shared<Shader>("assets/shaders/sky.vert", "assets/shaders/sky.frag");
         std::shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>("assets/shaders/debugDepthQuad.vert", "assets/shaders/debugDepthQuad.frag");
         std::shared_ptr<Shader> fontShader = std::make_shared<Shader>("assets/shaders/font.vert", "assets/shaders/font.frag");
+        std::shared_ptr<Shader> pbsShader = std::make_shared<Shader>("assets/shaders/pbs.vert", "assets/shaders/pbs.frag");
 
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
@@ -350,7 +349,7 @@ int main(int argc, char** argv) {
 
         // Initialize lights
         DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(-2.0f, -4.0f, -1.0f));
-        PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 2.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
+        PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -540,7 +539,7 @@ int main(int argc, char** argv) {
             fireShad.draw();
             torchShad.draw();
 
-            player1.Draw(depthShader, camDir);
+            player1.Draw(depthShader, camDir, false);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             floor.Draw(depthShader);
             map.Draw(depthShader);
@@ -594,16 +593,28 @@ int main(int argc, char** argv) {
 
             modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
 
-            podest.Draw(modelShader);
-
-            modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
-
             lava.Draw(modelShader);
 
-            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+            pbsShader->use();
 
-            modelShader->setUniform("modelMatrix", modelDiamiond);
-            diamond.Draw(modelShader);
+            pbsShader->setUniform("modelMatrix", glm::mat4(1.0f));
+            pbsShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+            pbsShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
+            pbsShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            setPerFrameUniforms(pbsShader.get(), camera, dirL, pointL);
+            setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
+
+            podest.Draw(pbsShader);
+
+            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+            
+
+            pbsShader->setUniform("modelMatrix", modelDiamiond);
+            setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 0.5f);
+            diamond.Draw(pbsShader);
+
+            modelShader->use();
+
             if (keyCounter < 4) {
 
                 glm::mat4 keyModel = glm::translate(mat4(1.0f), key1);
@@ -1131,4 +1142,10 @@ void initPhysics()
         return;
     }
     //gScene->addActor(*groundPlane);
+}
+
+void setPBRProperties(Shader* shader, float metallic, float roughness, float ao) {
+    shader->setUniform("ao", ao);
+    shader->setUniform("roughness", roughness);
+    shader->setUniform("metallic", metallic);
 }
