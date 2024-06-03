@@ -9,10 +9,10 @@ out vec4 color;
 
 uniform vec3 camera_world;
 
-uniform sampler2D texture_diffuse; // Diffuse texture
-uniform float metallic;            // Uniform for metallic
-uniform float roughness;           // Uniform for roughness
-uniform float ao;                  // Uniform for ambient occlusion
+uniform sampler2D texture_diffuse; 
+uniform float metallic;            
+uniform float roughness;           
+uniform float ao;                  
 
 uniform sampler2D shadowMap;
 uniform samplerCube skybox;

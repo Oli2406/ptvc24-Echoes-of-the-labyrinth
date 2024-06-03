@@ -383,6 +383,13 @@ int main(int argc, char** argv) {
         glm::vec3 key7 = glm::vec3(52.5, 1, -2);
         glm::vec3 key8 = glm::vec3(-41.25, 1, -3);
 
+        glm::mat4 demokey1 = glm::mat4(1.0f);
+        glm::mat4 demokey2 = glm::mat4(1.0f);
+        glm::translate(demokey1, glm::vec3(0.0f, 15.0f, 0.0f));
+        glm::scale(demokey1, glm::vec3(4.0f, 4.0f, 4.0f));
+        glm::translate(demokey2, glm::vec3(15.0f, 15.0f, 0.0f));
+        glm::scale(demokey2, glm::vec3(4.0f, 4.0f, 4.0f));
+
         // configure depth map FBO
         // -----------------------
         const unsigned int SHADOW_WIDTH = 16384, SHADOW_HEIGHT = 8192;
@@ -585,33 +592,29 @@ int main(int argc, char** argv) {
             glBindTexture(GL_TEXTURE_2D, texture3);
 
             player1.Draw(modelShader, camDir, won);
-
             modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
-
             floor.Draw(modelShader);
             map.Draw(modelShader);
-
             modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
-
             lava.Draw(modelShader);
 
             pbsShader->use();
-
             pbsShader->setUniform("modelMatrix", glm::mat4(1.0f));
             pbsShader->setUniform("viewProjMatrix", viewProjectionMatrix);
             pbsShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
             pbsShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
             setPerFrameUniforms(pbsShader.get(), camera, dirL, pointL);
             setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
-
             podest.Draw(pbsShader);
-
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-            
-
             pbsShader->setUniform("modelMatrix", modelDiamiond);
-            setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 0.5f);
+            setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
             diamond.Draw(pbsShader);
+            //pbsShader->setUniform("modelMatrix", demokey1);
+            //key.Draw(pbsShader);
+            //pbsShader->setUniform("modelMatrix", demokey2);
+            //setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
+            //key.Draw(pbsShader);
 
             modelShader->use();
 
