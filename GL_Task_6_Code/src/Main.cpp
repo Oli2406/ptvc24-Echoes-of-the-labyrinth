@@ -350,6 +350,7 @@ int main(int argc, char** argv) {
         // Initialize lights
         DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(-2.0f, -4.0f, -1.0f));
         PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
+        PointLight pointL2(glm::vec3(4.0f), glm::vec3(2, 1.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -518,6 +519,10 @@ int main(int argc, char** argv) {
         modelShader->setUniform("shadowMap", 2);
         debugDepthQuad->use();
         debugDepthQuad->setUniform("depthMap", 0);
+        pbsShader -> setUniform("texture_diffuse", 0);
+        pbsShader->use();
+        pbsShader->setUniform("skybox", 1);
+        pbsShader->setUniform("shadowMap", 2);
         
 
         // lighting info
