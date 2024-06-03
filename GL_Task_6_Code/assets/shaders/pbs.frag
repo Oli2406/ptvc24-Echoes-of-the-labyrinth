@@ -9,13 +9,13 @@ out vec4 color;
 
 uniform vec3 camera_world;
 
-uniform sampler2D texture_diffuse; 
 uniform float metallic;            
 uniform float roughness;           
 uniform float ao;                  
 
 uniform sampler2D shadowMap;
 uniform samplerCube skybox;
+uniform sampler2D texture_diffuse; 
 
 uniform bool draw_texcoords;
 uniform bool draw_normals;
@@ -49,7 +49,7 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
     float denom = (NdotH2 * (a2 - 1.0) + 1.0);
     denom = PI * denom * denom;
 
-    return num / denom;
+    return num / max(denom, 0.0000001);
 }
 
 float GeometrySchlickGGX(float NdotV, float roughness)
@@ -65,8 +65,8 @@ float GeometrySchlickGGX(float NdotV, float roughness)
 
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 {
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
+    float NdotV = max(dot(N, V), 0.0000001);
+    float NdotL = max(dot(N, L), 0.0000001);
     float ggx2 = GeometrySchlickGGX(NdotV, roughness);
     float ggx1 = GeometrySchlickGGX(NdotL, roughness);
 
@@ -101,7 +101,7 @@ float ShadowCalculation(float dotLightNormal)
 }
 
 void main() {
-    vec3 albedo = texture(texture_diffuse, TexCoords).rgb;
+    vec3 albedo = pow(texture(texture_diffuse, TexCoords).rgb, vec3(2.2));
     vec3 N = out_normals;
     vec3 V = normalize(camera_world - position_world);
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
@@ -110,6 +110,9 @@ void main() {
     vec3 Lo = vec3(0.0);
     vec3 L = normalize(-dirL.direction);
     vec3 H = normalize(V + L);
+    float distance = length(-dirL.direction);
+    float attenuation = 1 / distance * distance;
+    vec3 radiance = dirL.color * attenuation;
     
     // Cook-Torrance BRDF
     float NDF = DistributionGGX(N, H, roughness);
@@ -117,7 +120,7 @@ void main() {
     vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
     
     vec3 nominator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
     vec3 specular = nominator / denominator;
     
     vec3 kS = F;
@@ -125,18 +128,21 @@ void main() {
     kD *= 1.0 - metallic;
     
     float NdotL = max(dot(N, L), 0.0);
-    vec3 radiance = dirL.color * NdotL;
+    //vec3 radiance = dirL.color * NdotL;
     
-    Lo += (kD * albedo / PI + specular) * radiance;
+    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     
     vec3 pointLightDir = normalize(pointL.position - position_world);
     vec3 pointH = normalize(V + pointLightDir);
+    float distanceP = length(pointL.position - position_world);
+    float attenuationP = 1 / distanceP * distanceP;
+    vec3 radianceP = pointL.color * attenuationP;
     float pointNDF = DistributionGGX(N, pointH, roughness);
     float pointG = GeometrySmith(N, V, pointLightDir, roughness);
     vec3 pointF = fresnelSchlick(max(dot(pointH, V), 0.0), F0);
     
     vec3 pointNominator = pointNDF * pointG * pointF;
-    float pointDenominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, pointLightDir), 0.0) + 0.001;
+    float pointDenominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, pointLightDir), 0.0) + 0.0001;
     vec3 pointSpecular = pointNominator / pointDenominator;
     
     vec3 pointkS = pointF;
@@ -144,9 +150,9 @@ void main() {
     pointkD *= 1.0 - metallic;
     
     float pointNdotL = max(dot(N, pointLightDir), 0.0);
-    vec3 pointRadiance = pointL.color * pointNdotL;
+    //vec3 pointRadiance = pointL.color * pointNdotL;
     
-    Lo += (pointkD * albedo / PI + pointSpecular) * pointRadiance;
+    Lo += (pointkD * albedo / PI + pointSpecular) * radianceP * pointNdotL;
     
     float dotLightNormal = dot(-dirL.direction, N);
 
