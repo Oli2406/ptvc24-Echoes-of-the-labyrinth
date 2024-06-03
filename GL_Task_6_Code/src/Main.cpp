@@ -525,7 +525,7 @@ int main(int argc, char** argv) {
 
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
-            float near_plane = 0.1f, far_plane = 1000.0f;
+            float near_plane = 0.1f, far_plane = 100.0f;
             lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
             lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
@@ -540,7 +540,7 @@ int main(int argc, char** argv) {
             fireShad.draw();
             torchShad.draw();
 
-            /*player1.Draw(depthShader, camDir);
+            player1.Draw(depthShader, camDir);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             floor.Draw(depthShader);
             map.Draw(depthShader);
@@ -548,7 +548,7 @@ int main(int argc, char** argv) {
             podest.Draw(depthShader);
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
-            diamond.Draw(depthShader);*/
+            diamond.Draw(depthShader);
             
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
