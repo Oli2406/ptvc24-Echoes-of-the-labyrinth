@@ -68,8 +68,10 @@ public:
     }
 
 
-    void Draw(std::shared_ptr<Shader> shader, glm::vec3 camDir) {
-        this->updateModelMatrix(camDir);
+    void Draw(std::shared_ptr<Shader> shader, glm::vec3 camDir, bool won) {
+        if (!won) {
+            this->updateModelMatrix(camDir);
+        }
         shader->setUniform("modelMatrix", modelMatrix);
         this->model.Draw(shader);
     }

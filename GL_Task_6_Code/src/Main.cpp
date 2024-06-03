@@ -47,7 +47,7 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 void setPerFrameUniforms(Shader* shader, ArcCamera& camera, DirectionalLight& dirL, PointLight& pointL);
 void renderQuad();
 void initPhysics();
-void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4);
+void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4, glm::vec3 key5, glm::vec3 key6, glm::vec3 key7, glm::vec3 key8);
 void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float y, float scale, glm::vec3 color);
 
 /* --------------------------------------------- */
@@ -72,6 +72,12 @@ bool key1Found = false;
 bool key2Found = false;
 bool key3Found = false;
 bool key4Found = false;
+bool key5Found = false;
+bool key6Found = false;
+bool key7Found = false;
+bool key8Found = false;
+
+int keyCounter = 4;
 
 bool won = false;
 
@@ -309,12 +315,6 @@ int main(int argc, char** argv) {
             torchShadow
         );
 
-        Geometry keyCube = Geometry(
-            glm::translate(glm::mat4(1), glm::vec3(0, 0, 0)),
-            Geometry::createCubeGeometry(2, 2, 2),
-            keyColor
-        );
-
         string path = gcgFindTextureFile("assets/geometry/maze/maze.obj");
         Model map(&path[0], gPhysics, gScene, false);
         Skybox skybox;
@@ -375,10 +375,14 @@ int main(int argc, char** argv) {
         float alpha = 1.0f;
         float prevAngle = 0.0f;
 
-        glm::vec3 key1 = glm::vec3(9, 1, 9);
-        glm::vec3 key2 = glm::vec3(-9, 1, -9);
-        glm::vec3 key3 = glm::vec3(-9, 1, 9);
-        glm::vec3 key4 = glm::vec3(9, 1, -9);
+        glm::vec3 key1 = glm::vec3(30, 1, 27);
+        glm::vec3 key2 = glm::vec3(-30, 1, -29);
+        glm::vec3 key3 = glm::vec3(-30, 1, 29);
+        glm::vec3 key4 = glm::vec3(30, 1, -29);
+        glm::vec3 key5 = glm::vec3(-8, 1, 34.75);
+        glm::vec3 key6 = glm::vec3(-5, 1, -40.25);
+        glm::vec3 key7 = glm::vec3(52.5, 1, -2);
+        glm::vec3 key8 = glm::vec3(-41.25, 1, -3);
 
         // configure depth map FBO
         // -----------------------
@@ -502,7 +506,9 @@ int main(int argc, char** argv) {
         textureShader->setUniform("shadowMap", 2);
         modelShader->use();
         modelShader->setUniform("texture_diffuse", 0);
-        modelShader->setUniform("skybox", 1);
+        if (!won) {
+            modelShader->setUniform("skybox", 1);
+        }
         modelShader->setUniform("shadowMap", 2);
         debugDepthQuad->use();
         debugDepthQuad->setUniform("depthMap", 0);
@@ -519,7 +525,7 @@ int main(int argc, char** argv) {
 
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
-            float near_plane = 0.1f, far_plane = 100.0f;
+            float near_plane = 0.1f, far_plane = 1000.0f;
             lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
             lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
@@ -534,7 +540,7 @@ int main(int argc, char** argv) {
             fireShad.draw();
             torchShad.draw();
 
-            player1.Draw(depthShader, camDir);
+            /*player1.Draw(depthShader, camDir);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             floor.Draw(depthShader);
             map.Draw(depthShader);
@@ -542,7 +548,7 @@ int main(int argc, char** argv) {
             podest.Draw(depthShader);
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
-            diamond.Draw(depthShader);
+            diamond.Draw(depthShader);*/
             
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -559,25 +565,27 @@ int main(int argc, char** argv) {
             viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
             camDir = camera.extractCameraDirection(viewMatrix);
             viewProjectionMatrix = projection * viewMatrix;
-
-            modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
-            modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
-            modelShader->setUniform("materialCoefficients", materialCoefficients);
-            modelShader->setUniform("specularAlpha", alpha);
-            // Set per-frame uniforms
-            setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
-            modelShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
-
+            if (!won) {
+                modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+                modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
+                modelShader->setUniform("materialCoefficients", materialCoefficients);
+                modelShader->setUniform("specularAlpha", alpha);
+                // Set per-frame uniforms
+                setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
+                modelShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            }
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, depthMap);
 
-            player1.checkInputs(window, dt, camDir);
+            if (!won) {
+                player1.checkInputs(window, dt, camDir);
+            }
 
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture3);
 
-            player1.Draw(modelShader, camDir);
+            player1.Draw(modelShader, camDir, won);
 
             modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
 
@@ -596,47 +604,72 @@ int main(int argc, char** argv) {
 
             modelShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(modelShader);
-           
-            glm::mat4 keyModel = glm::translate(mat4(1.0f), key1);
-            if (!key1Found) {
-                modelShader->setUniform("modelMatrix", keyModel);
-                key.Draw(modelShader);
-            }
-            keyModel = glm::translate(mat4(1.0f), key2);
-            if (!key2Found) {
-                modelShader->setUniform("modelMatrix", keyModel);
-                key.Draw(modelShader);
-            }
-            keyModel = glm::translate(mat4(1.0f), key3);
-            if (!key3Found) {
-                modelShader->setUniform("modelMatrix", keyModel);
-                key.Draw(modelShader);
-            }
-            keyModel = glm::translate(mat4(1.0f), key4);
-            if (!key4Found) {
-                modelShader->setUniform("modelMatrix", keyModel);
-                key.Draw(modelShader);
+            if (keyCounter < 4) {
+
+                glm::mat4 keyModel = glm::translate(mat4(1.0f), key1);
+                if (!key1Found) {
+                    modelShader->setUniform("modelMatrix", keyModel);
+                    key.Draw(modelShader);
+                }
+                keyModel = glm::translate(mat4(1.0f), key2);
+                if (!key2Found) {
+                    modelShader->setUniform("modelMatrix", keyModel);
+                    key.Draw(modelShader);
+                }
+                keyModel = glm::translate(mat4(1.0f), key3);
+                if (!key3Found) {
+                    modelShader->setUniform("modelMatrix", keyModel);
+                    key.Draw(modelShader);
+                }
+                keyModel = glm::translate(mat4(1.0f), key4);
+                if (!key4Found) {
+                    modelShader->setUniform("modelMatrix", keyModel);
+                    key.Draw(modelShader);
+                }
+                keyModel = glm::translate(mat4(1.0f), key5);
+                if (!key5Found) {
+                    modelShader->setUniform("modelMatrix", keyModel);
+                    key.Draw(modelShader);
+                }
+                keyModel = glm::translate(mat4(1.0f), key6);
+                if (!key6Found) {
+                    modelShader->setUniform("modelMatrix", keyModel);
+                    key.Draw(modelShader);
+                }
+                keyModel = glm::translate(mat4(1.0f), key7);
+                if (!key7Found) {
+                    modelShader->setUniform("modelMatrix", keyModel);
+                    key.Draw(modelShader);
+                }
+                keyModel = glm::translate(mat4(1.0f), key8);
+                if (!key8Found) {
+                    modelShader->setUniform("modelMatrix", keyModel);
+                    key.Draw(modelShader);
+                }
             }
 
-            gameplay(player1.getPosition(), key1, key2, key3, key4);
+            gameplay(player1.getPosition(), key1, key2, key3, key4, key5, key6, key7, key8);
 
-            if (key1Found && key2Found && key3Found && key4Found) {
+            if (keyCounter >= 4 ) {
                 modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
                 bridge.Draw(modelShader);
             }
 
-
-            setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
-            textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
-            textureShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            std::cout << keyCounter << std::endl;
+   
+            if (!won) {
+                setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
+                textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+                textureShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            }
 
             fire.draw();
             torch.draw();
 
             glm::vec3 firePosition = player1.getPosition() + glm::vec3(0.4f, 1.5f, 0.0f);
             glm::vec3 torchPosition = player1.getPosition() + glm::vec3(0.4f, 1.41f, 0.0f);
-            fire.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
-            torch.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
+            fire.updateModelMatrix(glm::scale(glm::translate(glm::mat4(1.0f), firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
+            torch.updateModelMatrix(glm::scale(glm::translate(glm::mat4(1.0f), torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
 
             fireShad.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
             torchShad.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
@@ -667,9 +700,9 @@ int main(int argc, char** argv) {
                 }
 
                 float currentTime = glfwGetTime();
-                if (currentTime - startTime >= 5.0f) {
+                if (currentTime - startTime >= 15.0f) {
                     
-                    std::cout << "10 seconds have passed!" << std::endl;
+                    std::cout << "5 seconds have passed!" << std::endl;
                     break;
                 }
                
@@ -748,24 +781,68 @@ void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4) {
+void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4, glm::vec3 key5, glm::vec3 key6, glm::vec3 key7, glm::vec3 key8) {
     float x = playerPosition.x;
     float y = playerPosition.y;
     float z = playerPosition.z;
-    if (x < key1.x + 0.2 && x > key1.x - 0.2 && z < key1.z + 0.2 && z > key1.z - 0.2) {
+    //std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
+    if (x > key1.x - 0.55 && x < key1.x + 0.55 && z > key1.z - 1.7 && z < key1.z - 0.2) {
+        std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
+        if (!key1Found) {
+            keyCounter++;
+        }
         key1Found = true;
     }
 
-    if (x < key2.x + 1 && x > key2.x - 0.2 && z < key2.z + 0.2 && z > key2.z - 0.2) {
+    if (x > key2.x - 0.5 && x < key2.x + 0.5 && z > key2.z - 1.7 && z < key2.z - 0.2) {
+        if (!key2Found) {
+            keyCounter++;
+        }
         key2Found = true;
     }
 
-    if (x < key3.x + 0.2 && x > key3.x - 0.2 && z < key3.z + 0.2 && z > key3.z - 0.2) {
+    if (x > key3.x - 0.5 && x < key3.x + 0.5 && z > key3.z - 1.7 && z < key3.z - 0.2) {
+        std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
+        if (!key3Found) {
+            keyCounter++;
+        }
         key3Found = true;
     }
 
-    if (x < key4.x + 0.2 && x > key4.x - 0.2 && z < key4.z + 0.2 && z > key4.z - 0.2) {
+    if (x > key4.x - 0.5 && x < key4.x + 0.5 && z > key4.z - 1.7 && z < key4.z - 0.2) {
+        std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
+        if (!key4Found) {
+            keyCounter++;
+        }
         key4Found = true;
+    }
+
+    if (x > key5.x - 0.5 && x < key5.x + 0.5 && z > key5.z - 1.7 && z < key5.z - 0.2) {
+        if (!key5Found) {
+            keyCounter++;
+        }
+        key5Found = true;
+    }
+
+    if (x > key6.x - 0.5 && x < key6.x + 0.5 && z > key6.z - 1.7 && z < key6.z - 0.2) {
+        if (!key6Found) {
+            keyCounter++;
+        }
+        key6Found = true;
+    }
+
+    if (x > key7.x - 0.5 && x < key7.x + 0.5 && z > key7.z - 1.7 && z < key7.z - 0.2) {
+        if (!key7Found) {
+            keyCounter++;
+        }
+        key7Found = true;
+    }
+
+    if (x > key8.x - 0.5 && x < key8.x + 0.5 && z > key8.z - 1.7 && z < key8.z - 0.2) {
+        if (!key8Found) {
+            keyCounter++;
+        }
+        key8Found = true;
     }
 
     if (x < 0 + 1.2 && x > 0 - 1.2 && z < 0 + 1.2 && z > 0 - 1.2) {
