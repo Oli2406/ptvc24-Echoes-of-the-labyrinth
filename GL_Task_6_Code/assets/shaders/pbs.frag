@@ -99,7 +99,9 @@ float ShadowCalculation(float dotLightNormal)
 
 void main() {
     vec3 albedo = texture(texture_diffuse, TexCoords).rgb;
+    //vec3 albedo = vec3(0.24, 0.64, 0.12);
     vec3 N = normalize(out_normals);
+
     vec3 V = normalize(camera_world - position_world);
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
@@ -120,7 +122,8 @@ void main() {
     float NdotL = max(dot(N, L), 0.0);
     vec3 radiance = dirL.color * NdotL;
     
-    vec3 specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001);
+    vec3 specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001);
+    specular = clamp(specular, 0.0, 1.0); // clamp specular value to prevent excessive highlights
     Lo += (kD * albedo / PI + specular) * radiance;
 
     // Point Light
@@ -140,7 +143,8 @@ void main() {
     
     float pointNdotL = max(dot(N, pointLightDir), 0.0);
     
-    vec3 pointSpecular = (pointNDF * pointG * pointF) / (4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001);
+    vec3 pointSpecular = (pointNDF * pointG * pointF) / (4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001);
+    pointSpecular = clamp(pointSpecular, 0.0, 1.0); // clamp specular value to prevent excessive highlights
     Lo += (pointkD * albedo / PI + pointSpecular) * pointRadiance * pointNdotL;
 
     // Image-based lighting reflection
@@ -149,7 +153,7 @@ void main() {
 
     // Combine with ambient occlusion
     vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 finalColor = ambient + (1.0 - ShadowCalculation(dot(-dirL.direction, N))) * Lo;
+    vec3 finalColor = ambient + Lo;
     finalColor = mix(finalColor, envColor, 0.005f);
 
     // Tone mapping and gamma correction
