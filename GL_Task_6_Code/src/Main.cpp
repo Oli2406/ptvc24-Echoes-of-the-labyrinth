@@ -66,6 +66,7 @@ static bool _strafing = false;
 static float _zoom = 5.0f;
 
 bool gammaEnabled = false;
+bool gamma = false;
 
 ArcCamera camera;
 bool firstMouse = true;
@@ -247,6 +248,9 @@ int main(int argc, char** argv) {
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    if (gamma) {
+        glEnable(GL_FRAMEBUFFER_SRGB);
+    }
 
     initPhysics();
 
@@ -969,6 +973,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         break;
     case GLFW_KEY_G:
         gammaEnabled = !gammaEnabled;
+        break;
+    case GLFW_KEY_J:
+        gamma = !gamma;
         break;
     }
 }
