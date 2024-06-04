@@ -620,10 +620,9 @@ int main(int argc, char** argv) {
             podest.Draw(pbsShader);
             //modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             /**/pbsShader->setUniform("modelMatrix", /*modelDiamiond*/mat4(1.0f));
-
+            setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
+            diamond.Draw(pbsShader);
             if (pbsDemo) {
-                setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
-                diamond.Draw(pbsShader);
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey1, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z)));
                 key.Draw(pbsShader);
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey2, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z + 2)));
