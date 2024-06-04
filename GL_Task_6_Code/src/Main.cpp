@@ -22,6 +22,7 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H  
+#include "globals.h"
 
 
 #undef min
@@ -65,6 +66,8 @@ static bool _dragging = true;
 static bool _strafing = false;
 static float _zoom = 5.0f;
 
+bool gammaEnabled = false;
+
 ArcCamera camera;
 bool firstMouse = true;
 static float PI = 3.14159265358979;
@@ -78,7 +81,7 @@ bool key6Found = false;
 bool key7Found = false;
 bool key8Found = false;
 
-int keyCounter = 4;
+int keyCounter = 0;
 
 bool won = false;
 
@@ -588,6 +591,7 @@ int main(int argc, char** argv) {
                 // Set per-frame uniforms
                 setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
                 modelShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+                modelShader->setUniform("gamma", gammaEnabled);
             }
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, depthMap);
@@ -677,13 +681,12 @@ int main(int argc, char** argv) {
                 modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
                 bridge.Draw(modelShader);
             }
-
-            std::cout << keyCounter << std::endl;
    
             if (!won) {
                 setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
                 textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
                 textureShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+                textureShader->setUniform("gamma", gammaEnabled);
             }
 
             fire.draw();
@@ -730,6 +733,7 @@ int main(int argc, char** argv) {
                 }
                
             }
+            std::cout << (gammaEnabled ? "Gamma enabled" : "Gamma disabled") << std::endl;
 
             // Compute frame time
             dt = t;
@@ -808,7 +812,6 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
     float x = playerPosition.x;
     float y = playerPosition.y;
     float z = playerPosition.z;
-    //std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
     if (x > key1.x - 0.55 && x < key1.x + 0.55 && z > key1.z - 1.7 && z < key1.z - 0.2) {
         std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
         if (!key1Found) {
@@ -967,6 +970,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         break;
     case GLFW_KEY_T:
         _draw_texcoords = !_draw_texcoords;
+        break;
+    case GLFW_KEY_G:
+        gammaEnabled = !gammaEnabled;
         break;
     }
 }

@@ -28,6 +28,8 @@
 #define COLLISION_FLAG_DYNAMIC (1<<0)
 #define COLLISION_FLAG_STATIC (1<<1)
 
+#include "globals.h"
+
 
 using namespace physx;
 
@@ -429,7 +431,7 @@ GLint TextureFromFile(const char* path, string directory)
 
     // Textur an ID zuweisen
     glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, gammaEnabled ? GL_SRGB : GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // Parameter setzen
