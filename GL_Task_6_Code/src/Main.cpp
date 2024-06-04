@@ -84,6 +84,7 @@ bool key8Found = false;
 int keyCounter = 0;
 
 bool won = false;
+bool pbsDemo = false;
 
 
 
@@ -356,7 +357,7 @@ int main(int argc, char** argv) {
 
         // Initialize lights
         DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(-2.0f, -4.0f, -1.0f));
-        PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
+        PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.7f, 1.8f));
         PointLight pointL2(glm::vec3(4.0f), glm::vec3(2, 1.5, 0), glm::vec3(1.0f, 0.4f, 0.1f));
 
         // Render loop
@@ -393,10 +394,7 @@ int main(int argc, char** argv) {
 
         glm::mat4 demokey1 = glm::mat4(1.0f);
         glm::mat4 demokey2 = glm::mat4(1.0f);
-        glm::translate(demokey1, glm::vec3(0.0f, 15.0f, 0.0f));
-        glm::scale(demokey1, glm::vec3(4.0f, 4.0f, 4.0f));
-        glm::translate(demokey2, glm::vec3(15.0f, 15.0f, 0.0f));
-        glm::scale(demokey2, glm::vec3(4.0f, 4.0f, 4.0f));
+        
 
         // configure depth map FBO
         // -----------------------
@@ -530,6 +528,7 @@ int main(int argc, char** argv) {
         pbsShader->use();
         pbsShader->setUniform("skybox", 1);
         pbsShader->setUniform("shadowMap", 2);
+        pbsShader->setUniform("normalMap", 3);
         
 
         // lighting info
@@ -564,7 +563,7 @@ int main(int argc, char** argv) {
             map.Draw(depthShader);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             podest.Draw(depthShader);
-            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+            //modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(depthShader);
             
@@ -617,18 +616,21 @@ int main(int argc, char** argv) {
             pbsShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
             pbsShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
             setPerFrameUniforms(pbsShader.get(), camera, dirL, pointL);
-            setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
+            setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 0.7f);
             podest.Draw(pbsShader);
-            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-            pbsShader->setUniform("modelMatrix", modelDiamiond);
-            setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
-            diamond.Draw(pbsShader);
-            //pbsShader->setUniform("modelMatrix", demokey1);
-            //key.Draw(pbsShader);
-            //pbsShader->setUniform("modelMatrix", demokey2);
-            //setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
-            //key.Draw(pbsShader);
+            //modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+            /**/pbsShader->setUniform("modelMatrix", /*modelDiamiond*/mat4(1.0f));
 
+            if (pbsDemo) {
+                setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
+                diamond.Draw(pbsShader);
+                pbsShader->setUniform("modelMatrix", glm::translate(demokey1, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z)));
+                key.Draw(pbsShader);
+                pbsShader->setUniform("modelMatrix", glm::translate(demokey2, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z + 2)));
+                setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
+                key.Draw(pbsShader);
+            }
+           
             modelShader->use();
 
             if (keyCounter < 4) {
@@ -734,6 +736,7 @@ int main(int argc, char** argv) {
                
             }
             //std::cout << (gammaEnabled ? "Gamma enabled" : "Gamma disabled") << std::endl;
+            //std::cout << (pbsDemo ? "demo enabled" : "demo disabled") << std::endl;
 
             // Compute frame time
             dt = t;
@@ -974,7 +977,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     case GLFW_KEY_G:
         gammaEnabled = !gammaEnabled;
         break;
+    case GLFW_KEY_P:
+        pbsDemo = !pbsDemo;
+        break;
     }
+
 }
 
 static void APIENTRY DebugCallbackDefault(

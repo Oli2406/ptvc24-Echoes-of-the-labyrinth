@@ -277,6 +277,8 @@ private:
 
         vector<Text> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+        vector<Text> normalMap = loadMaterialTextures(material, aiTextureType_NORMALS, "normalMap");
+        textures.insert(textures.end(), normalMap.begin(), normalMap.end());
 
         ExtractBoneWeightForVertices(vertices, mesh, scene);
 

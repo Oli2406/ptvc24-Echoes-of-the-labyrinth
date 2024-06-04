@@ -67,7 +67,7 @@ public:
     {
         // Bind appropriate textures
         GLuint diffuseNr = 1;
-        GLuint specularNr = 1;
+        GLuint normalNr = 1;
         
         for( GLuint i = 0; i < this->textures.size(); i++ )
         {
@@ -81,9 +81,9 @@ public:
             {
                 ss << diffuseNr++; // Transfer GLuint to stream
             }
-            else if( name == "texture_specular" )
+            else if( name == "normalMap" )
             {
-                ss << specularNr++; // Transfer GLuint to stream
+                ss << normalNr++; // Transfer GLuint to stream
             }
             
             number = ss.str( );
