@@ -733,7 +733,7 @@ int main(int argc, char** argv) {
                 }
                
             }
-            std::cout << (gammaEnabled ? "Gamma enabled" : "Gamma disabled") << std::endl;
+            //std::cout << (gammaEnabled ? "Gamma enabled" : "Gamma disabled") << std::endl;
 
             // Compute frame time
             dt = t;
