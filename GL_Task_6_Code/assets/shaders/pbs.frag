@@ -150,7 +150,7 @@ void main() {
     // Combine with ambient occlusion
     vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 finalColor = ambient + (1.0 - ShadowCalculation(dot(-dirL.direction, N))) * Lo;
-    finalColor = mix(finalColor, envColor, 0.07f);
+    finalColor = mix(finalColor, envColor, 0.005f);
 
     // Tone mapping and gamma correction
     finalColor = finalColor / (finalColor + vec3(1.0));

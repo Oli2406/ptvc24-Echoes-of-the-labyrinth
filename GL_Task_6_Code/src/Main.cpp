@@ -16,6 +16,7 @@
 #include "Player.h"
 #include "ArcCamera.h"
 #include "Geometry.h"
+#include "Animator.h"
 
 #include <filesystem>
 
@@ -259,6 +260,7 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>("assets/shaders/debugDepthQuad.vert", "assets/shaders/debugDepthQuad.frag");
         std::shared_ptr<Shader> fontShader = std::make_shared<Shader>("assets/shaders/font.vert", "assets/shaders/font.frag");
         std::shared_ptr<Shader> pbsShader = std::make_shared<Shader>("assets/shaders/pbs.vert", "assets/shaders/pbs.frag");
+        std::shared_ptr<Shader> skinningShader = std::make_shared<Shader>("assets/shaders/skinning.vert", "assets/shaders/skinning.frag");
 
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
@@ -329,6 +331,8 @@ int main(int argc, char** argv) {
 
         string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.obj");
         Model adventurer(&path4[0], gPhysics, gScene, true);
+        //Animation walk(path4, &adventurer);
+        //Animator animator(&walk);
 
         string path5 = gcgFindTextureFile("assets/geometry/key/key.obj");
         Model key(&path5[0], gPhysics, gScene, false);
