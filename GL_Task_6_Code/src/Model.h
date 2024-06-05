@@ -28,12 +28,8 @@
 #define COLLISION_FLAG_DYNAMIC (1<<0)
 #define COLLISION_FLAG_STATIC (1<<1)
 
-#include "globals.h"
-
 
 using namespace physx;
-
-GLint TextureFromFile(const char* path, string directory);
 
 class Model
 {
@@ -41,13 +37,13 @@ public:
     
 
     // Constructor, expects a filepath to a 3D model.
-    Model(GLchar* path)
+    Model(GLchar* path, bool gamma, bool hdr)
     {
-        this->loadModel(path);
+        this->loadModel(path, gamma, false);
     }
 
-    Model(GLchar* path, PxPhysics* physics, PxScene* scene, bool isDynamic) {
-        this->loadModel(path);
+    Model(GLchar* path, PxPhysics* physics, PxScene* scene, bool isDynamic, bool gamma, bool hdr) {
+        this->loadModel(path, gamma, false);
         this->initPhysics(physics, scene, isDynamic);
     }
 
@@ -66,6 +62,8 @@ public:
 
     auto& GetBoneInfoMap() { return m_BoneInfoMap; }
     int& GetBoneCount() { return m_BoneCounter; }
+
+
 
 private:
 
@@ -195,7 +193,7 @@ private:
 
 
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
-    void loadModel(string const& path)
+    void loadModel(string const& path, bool gamma, bool hdr)
     {
         // read file via ASSIMP
         Assimp::Importer importer;
@@ -210,11 +208,11 @@ private:
         directory = path.substr(0, path.find_last_of('/'));
 
         // process ASSIMP's root node recursively
-        processNode(scene->mRootNode, scene);
+        processNode(scene->mRootNode, scene, gamma, hdr);
     }
 
     // processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
-    void processNode(aiNode* node, const aiScene* scene)
+    void processNode(aiNode* node, const aiScene* scene, bool gamma, bool hdr)
     {
         // process each mesh located at the current node
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
@@ -222,12 +220,12 @@ private:
             // the node object only contains indices to index the actual objects in the scene. 
             // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            meshes.push_back(processMesh(mesh, scene));
+            meshes.push_back(processMesh(mesh, scene, gamma, hdr));
         }
         // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            processNode(node->mChildren[i], scene);
+            processNode(node->mChildren[i], scene, gamma, hdr);
         }
 
     }
@@ -242,7 +240,7 @@ private:
     }
 
 
-    Mesh processMesh(aiMesh* mesh, const aiScene* scene)
+    Mesh processMesh(aiMesh* mesh, const aiScene* scene, bool gamma, bool hdr)
     {
         vector<Vertex> vertices;
         vector<unsigned int> indices;
@@ -275,9 +273,9 @@ private:
         }
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        vector<Text> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        vector<Text> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", gamma, hdr);
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-        vector<Text> normalMap = loadMaterialTextures(material, aiTextureType_NORMALS, "normalMap");
+        vector<Text> normalMap = loadMaterialTextures(material, aiTextureType_NORMALS, "normalMap", gamma, hdr);
         textures.insert(textures.end(), normalMap.begin(), normalMap.end());
 
         ExtractBoneWeightForVertices(vertices, mesh, scene);
@@ -336,7 +334,7 @@ private:
     }
 
 
-    unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false)
+    unsigned int TextureFromFile(const char* path, const string& directory, bool gamma, bool hdr)
     {
         string filename = string(path);
         filename = directory + '/' + filename;
@@ -348,16 +346,21 @@ private:
         unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
         if (data)
         {
-            GLenum format;
-            if (nrComponents == 1)
-                format = GL_RED;
-            else if (nrComponents == 3)
-                format = GL_RGB;
-            else if (nrComponents == 4)
-                format = GL_RGBA;
+            GLenum internalFormat;
+            GLenum dataFormat;
+            if (nrComponents == 1) {
+                internalFormat = dataFormat = GL_RED;
+            } else if (nrComponents == 3) {
+                internalFormat = gamma ? GL_SRGB : GL_RGB;
+                internalFormat = hdr ? GL_RGBA16F : internalFormat;
+                dataFormat = hdr ? GL_RGBA : GL_RGB;
+            } else if (nrComponents == 4) {
+                internalFormat = gamma ? GL_SRGB_ALPHA : GL_RGBA;
+                dataFormat = GL_RGBA;
+            }
 
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -387,7 +390,7 @@ private:
         return to;
     }
 
-    vector<Text> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
+    vector<Text> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName, bool gamma, bool hdr)
     {
         vector<Text> textures;
         for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -403,7 +406,7 @@ private:
             if (!skip)
             {   // if texture hasn't been loaded already, load it
                 Text texture;
-                texture.id = TextureFromFile(str.C_Str(), this->directory);
+                texture.id = TextureFromFile(str.C_Str(), this->directory, gamma, hdr);
                 texture.type = typeName;
                 texture.path = str.C_Str();
                 textures.push_back(texture);
@@ -413,37 +416,3 @@ private:
         return textures;
     }
 };
-
-GLint TextureFromFile(const char* path, string directory)
-{
-    //Generiere Textur-ID und lade Texturdaten
-    string filename = string(path);
-    filename = directory + '/' + filename;
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height;
-    int nrChannels = 3;
-    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
-    if (!data)
-    {
-        std::cerr << "Failed to load texture: " << filename << std::endl;
-        return -1;
-    }
-
-    // Textur an ID zuweisen
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, gammaEnabled ? GL_SRGB : GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    // Parameter setzen
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    stbi_image_free(data);
-
-    return textureID;
-}

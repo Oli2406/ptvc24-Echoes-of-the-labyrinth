@@ -19,7 +19,6 @@ uniform samplerCube skybox;
 
 uniform bool draw_texcoords;
 uniform bool draw_normals;
-uniform bool gamma;
 
 uniform struct DirectionalLight {
 	vec3 color;
@@ -36,13 +35,7 @@ vec3 phong(vec3 n, vec3 l, vec3 v, vec3 diffuseC, float diffuseF, vec3 specularC
 	float d = length(l);
 	l = normalize(l);
 	float att = 1.0;	
-	if (attenuate) {
-        if (gamma) {
-            att = 1.0 / (attenuation.x + d * d * attenuation.y + d * d * d * d * attenuation.z);
-        } else {
-            att = 1.0 / (attenuation.x + d * attenuation.y + d * d * attenuation.z);
-        }
-    }
+	if (attenuate) att = 1.0 / (attenuation.x + d * attenuation.y + d * d * attenuation.z);
 	vec3 r = reflect(-l, n);
 	return (diffuseF * diffuseC * max(0, dot(n, l)) + specularF * specularC * pow(max(0, dot(r, v)), alpha)) * att; 
 }
@@ -104,10 +97,6 @@ void main() {
     float shadow = ShadowCalculation(dotLightNormal); 
 
 	texColor = (ambient + ((shadow) * (direct + point))) * texColor;
-
-	if(gamma){
-        texColor = pow(texColor, vec3(1.0/2.2));
-	}
 
 	 color = vec4(texColor, 1.0);
 
