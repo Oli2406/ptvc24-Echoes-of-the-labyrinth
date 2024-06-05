@@ -62,11 +62,11 @@ public:
         rotationMatrix[1] = glm::vec4(up, 0.0f);
         rotationMatrix[2] = glm::vec4(forward, 0.0f);
 
-        glm::vec3 glmPosition(playerPos.x, playerPos.y, playerPos.z);
+        glm::vec3 glmPosition(playerPos.x, playerPos.y - 1.5f, playerPos.z);
 
         modelMatrix = glm::translate(glm::mat4(1.0f), glmPosition) * rotationMatrix;
-        modelMatrix = glm::rotate(modelMatrix, glm::radians(180.0f), glm::vec3(0.0, 0.0, 1.0));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f));
+        //modelMatrix = glm::rotate(modelMatrix, glm::radians(180.0f), glm::vec3(0.0, 0.0, 1.0));
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.01f));
     }
 
 

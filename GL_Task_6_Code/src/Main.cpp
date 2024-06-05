@@ -333,7 +333,7 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0], gPhysics, gScene, false);
 
-        string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.dae");
+        string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.fbx");
         Model adventurer(&path4[0], gPhysics, gScene, true);
         Animation walk(path4, &adventurer);
         Animator animator(&walk);
