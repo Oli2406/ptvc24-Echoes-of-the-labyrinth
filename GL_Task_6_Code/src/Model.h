@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <string>
@@ -28,22 +29,23 @@
 #define COLLISION_FLAG_DYNAMIC (1<<0)
 #define COLLISION_FLAG_STATIC (1<<1)
 
+#include "globals.h"
+
 
 using namespace physx;
 
 class Model
 {
 public:
-    
 
-    // Constructor, expects a filepath to a 3D model.
-    Model(GLchar* path, bool gamma, bool hdr)
+
+    Model(GLchar* path)
     {
-        this->loadModel(path, gamma, false);
+        this->loadModel(path);
     }
 
-    Model(GLchar* path, PxPhysics* physics, PxScene* scene, bool isDynamic, bool gamma, bool hdr) {
-        this->loadModel(path, gamma, false);
+    Model(GLchar* path, PxPhysics* physics, PxScene* scene, bool isDynamic) {
+        this->loadModel(path);
         this->initPhysics(physics, scene, isDynamic);
     }
 
@@ -51,7 +53,6 @@ public:
 
     }
 
-    // Draws the model, and thus all its meshes
     void Draw(std::shared_ptr<Shader> shader)
     {
         for (GLuint i = 0; i < this->meshes.size(); i++)
@@ -63,13 +64,11 @@ public:
     auto& GetBoneInfoMap() { return m_BoneInfoMap; }
     int& GetBoneCount() { return m_BoneCounter; }
 
-
-
 private:
 
     vector<Mesh> meshes;
     string directory;
-    vector<Text> textures_loaded;	// Stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
+    vector<Text> textures_loaded;
     PxPhysics* physics;
     PxScene* scene;
     vector<PxRigidStatic*> physxActors;
@@ -80,8 +79,6 @@ private:
     std::map<string, BoneInfo> m_BoneInfoMap;
     int m_BoneCounter = 0;
 
-public:
-    
     void initPhysics(PxPhysics* physics, PxScene* scene, bool isDynamic) {
         this->physics = physics;
         this->scene = scene;
@@ -127,7 +124,7 @@ public:
             }
         }
     }
-
+public:
     PxRigidStatic* getPlayerModel() {
         return this->actor;
     }
@@ -135,9 +132,6 @@ public:
     PxController* getController() {
         return this->controller;
     }
-
-
-private:
 
     PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geometry, PxPhysics* physics, PxMaterial* material, PxScene* scene, const PxVec3& velocity = PxVec3(0)) {
         PxRigidDynamic* dynamic = PxCreateDynamic(*physics, t, geometry, *material, 10.0f);
@@ -155,7 +149,7 @@ private:
 
     PxTriangleMesh* createTriangle(const Mesh& mesh)
     {
-        // Extract vertices and indices from Mesh
+
         vector<Vertex> vertices = mesh.vertices;
         vector<GLuint> indices = mesh.indices;
 
@@ -190,42 +184,34 @@ private:
 
         return triangleMesh;
     }
-
-
-    // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
-    void loadModel(string const& path, bool gamma, bool hdr)
+private:
+    void loadModel(string const& path)
     {
-        // read file via ASSIMP
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
-        // check for errors
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
+
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
             cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << endl;
             return;
         }
-        // retrieve the directory path of the filepath
+
         directory = path.substr(0, path.find_last_of('/'));
 
-        // process ASSIMP's root node recursively
-        processNode(scene->mRootNode, scene, gamma, hdr);
+        processNode(scene->mRootNode, scene);
     }
 
-    // processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
-    void processNode(aiNode* node, const aiScene* scene, bool gamma, bool hdr)
+    void processNode(aiNode* node, const aiScene* scene)
     {
-        // process each mesh located at the current node
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
-            // the node object only contains indices to index the actual objects in the scene. 
-            // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
+
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            meshes.push_back(processMesh(mesh, scene, gamma, hdr));
+            meshes.push_back(processMesh(mesh, scene));
         }
-        // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            processNode(node->mChildren[i], scene, gamma, hdr);
+            processNode(node->mChildren[i], scene);
         }
 
     }
@@ -240,7 +226,7 @@ private:
     }
 
 
-    Mesh processMesh(aiMesh* mesh, const aiScene* scene, bool gamma, bool hdr)
+    Mesh processMesh(aiMesh* mesh, const aiScene* scene)
     {
         vector<Vertex> vertices;
         vector<unsigned int> indices;
@@ -273,9 +259,9 @@ private:
         }
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        vector<Text> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", gamma, hdr);
+        vector<Text> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-        vector<Text> normalMap = loadMaterialTextures(material, aiTextureType_NORMALS, "normalMap", gamma, hdr);
+        vector<Text> normalMap = loadMaterialTextures(material, aiTextureType_NORMALS, "normalMap");
         textures.insert(textures.end(), normalMap.begin(), normalMap.end());
 
         ExtractBoneWeightForVertices(vertices, mesh, scene);
@@ -331,10 +317,11 @@ private:
                 SetVertexBoneData(vertices[vertexId], boneID, weight);
             }
         }
+
     }
 
 
-    unsigned int TextureFromFile(const char* path, const string& directory, bool gamma, bool hdr)
+    unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false)
     {
         string filename = string(path);
         filename = directory + '/' + filename;
@@ -346,21 +333,16 @@ private:
         unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
         if (data)
         {
-            GLenum internalFormat;
-            GLenum dataFormat;
-            if (nrComponents == 1) {
-                internalFormat = dataFormat = GL_RED;
-            } else if (nrComponents == 3) {
-                internalFormat = gamma ? GL_SRGB : GL_RGB;
-                internalFormat = hdr ? GL_RGBA16F : internalFormat;
-                dataFormat = hdr ? GL_RGBA : GL_RGB;
-            } else if (nrComponents == 4) {
-                internalFormat = gamma ? GL_SRGB_ALPHA : GL_RGBA;
-                dataFormat = GL_RGBA;
-            }
+            GLenum format;
+            if (nrComponents == 1)
+                format = GL_RED;
+            else if (nrComponents == 3)
+                format = GL_RGB;
+            else if (nrComponents == 4)
+                format = GL_RGBA;
 
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -390,14 +372,14 @@ private:
         return to;
     }
 
-    vector<Text> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName, bool gamma, bool hdr)
+    vector<Text> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
     {
         vector<Text> textures;
         for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
         {
             aiString str;
             mat->GetTexture(type, i, &str);
-            
+
             bool skip = false;
             for (unsigned int j = 0; j < textures_loaded.size(); j++)
             {
@@ -406,7 +388,7 @@ private:
             if (!skip)
             {   // if texture hasn't been loaded already, load it
                 Text texture;
-                texture.id = TextureFromFile(str.C_Str(), this->directory, gamma, hdr);
+                texture.id = TextureFromFile(str.C_Str(), this->directory);
                 texture.type = typeName;
                 texture.path = str.C_Str();
                 textures.push_back(texture);

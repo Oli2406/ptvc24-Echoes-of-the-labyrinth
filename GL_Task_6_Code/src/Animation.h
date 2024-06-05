@@ -65,7 +65,6 @@ private:
 	static inline glm::mat4 ConvertMatrixToGLMFormat(const aiMatrix4x4& from)
 	{
 		glm::mat4 to;
-		//the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
 		to[0][0] = from.a1; to[1][0] = from.a2; to[2][0] = from.a3; to[3][0] = from.a4;
 		to[0][1] = from.b1; to[1][1] = from.b2; to[2][1] = from.b3; to[3][1] = from.b4;
 		to[0][2] = from.c1; to[1][2] = from.c2; to[2][2] = from.c3; to[3][2] = from.c4;
@@ -76,10 +75,9 @@ private:
 	{
 		int size = animation->mNumChannels;
 
-		auto& boneInfoMap = model.GetBoneInfoMap();//getting m_BoneInfoMap from Model class
-		int& boneCount = model.GetBoneCount(); //getting the m_BoneCounter from Model class
+		auto& boneInfoMap = model.GetBoneInfoMap();
+		int& boneCount = model.GetBoneCount();
 
-		//reading channels(bones engaged in an animation and their keyframes)
 		for (int i = 0; i < size; i++)
 		{
 			auto channel = animation->mChannels[i];
