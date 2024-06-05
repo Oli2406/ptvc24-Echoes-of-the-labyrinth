@@ -33,14 +33,11 @@
 
 using namespace physx;
 
-GLint TextureFromFile(const char* path, string directory);
-
 class Model
 {
 public:
     
 
-    // Constructor, expects a filepath to a 3D model.
     Model(GLchar* path)
     {
         this->loadModel(path);
@@ -55,7 +52,6 @@ public:
 
     }
 
-    // Draws the model, and thus all its meshes
     void Draw(std::shared_ptr<Shader> shader)
     {
         for (GLuint i = 0; i < this->meshes.size(); i++)
@@ -71,7 +67,7 @@ private:
 
     vector<Mesh> meshes;
     string directory;
-    vector<Text> textures_loaded;	// Stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
+    vector<Text> textures_loaded;
     PxPhysics* physics;
     PxScene* scene;
     vector<PxRigidStatic*> physxActors;
@@ -81,8 +77,6 @@ private:
     float scale;
     std::map<string, BoneInfo> m_BoneInfoMap;
     int m_BoneCounter = 0;
-
-public:
     
     void initPhysics(PxPhysics* physics, PxScene* scene, bool isDynamic) {
         this->physics = physics;
@@ -129,7 +123,7 @@ public:
             }
         }
     }
-
+public:
     PxRigidStatic* getPlayerModel() {
         return this->actor;
     }
@@ -137,9 +131,6 @@ public:
     PxController* getController() {
         return this->controller;
     }
-
-
-private:
 
     PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geometry, PxPhysics* physics, PxMaterial* material, PxScene* scene, const PxVec3& velocity = PxVec3(0)) {
         PxRigidDynamic* dynamic = PxCreateDynamic(*physics, t, geometry, *material, 10.0f);
@@ -157,7 +148,7 @@ private:
 
     PxTriangleMesh* createTriangle(const Mesh& mesh)
     {
-        // Extract vertices and indices from Mesh
+     
         vector<Vertex> vertices = mesh.vertices;
         vector<GLuint> indices = mesh.indices;
 
@@ -192,39 +183,31 @@ private:
 
         return triangleMesh;
     }
-
-
-    // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
+private:
     void loadModel(string const& path)
     {
-        // read file via ASSIMP
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
-        // check for errors
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
+   
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) 
         {
             cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << endl;
             return;
         }
-        // retrieve the directory path of the filepath
+       
         directory = path.substr(0, path.find_last_of('/'));
 
-        // process ASSIMP's root node recursively
         processNode(scene->mRootNode, scene);
     }
 
-    // processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
     void processNode(aiNode* node, const aiScene* scene)
     {
-        // process each mesh located at the current node
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
-            // the node object only contains indices to index the actual objects in the scene. 
-            // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
+        
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             meshes.push_back(processMesh(mesh, scene));
         }
-        // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
             processNode(node->mChildren[i], scene);
@@ -333,6 +316,7 @@ private:
                 SetVertexBoneData(vertices[vertexId], boneID, weight);
             }
         }
+        
     }
 
 
@@ -413,37 +397,3 @@ private:
         return textures;
     }
 };
-
-GLint TextureFromFile(const char* path, string directory)
-{
-    //Generiere Textur-ID und lade Texturdaten
-    string filename = string(path);
-    filename = directory + '/' + filename;
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height;
-    int nrChannels = 3;
-    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
-    if (!data)
-    {
-        std::cerr << "Failed to load texture: " << filename << std::endl;
-        return -1;
-    }
-
-    // Textur an ID zuweisen
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, gammaEnabled ? GL_SRGB : GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    // Parameter setzen
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    stbi_image_free(data);
-
-    return textureID;
-}

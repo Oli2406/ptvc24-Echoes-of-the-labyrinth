@@ -333,10 +333,10 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0], gPhysics, gScene, false);
 
-        string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.obj");
+        string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer.dae");
         Model adventurer(&path4[0], gPhysics, gScene, true);
-        //Animation walk(path4, &adventurer);
-        //Animator animator(&walk);
+        Animation walk(path4, &adventurer);
+        Animator animator(&walk);
 
         string path5 = gcgFindTextureFile("assets/geometry/key/key.obj");
         Model key(&path5[0], gPhysics, gScene, false);
@@ -529,16 +529,17 @@ int main(int argc, char** argv) {
         pbsShader->setUniform("skybox", 1);
         pbsShader->setUniform("shadowMap", 2);
         pbsShader->setUniform("normalMap", 3);
+        skinningShader->setUniform("texture_diffuse", 0);
         
-
-        // lighting info
-        // -------------
+        
         glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
         lightPos *= 10;
 
         while (!glfwWindowShouldClose(window)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            animator.UpdateAnimation(dt);
 
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
@@ -599,11 +600,19 @@ int main(int argc, char** argv) {
                 player1.checkInputs(window, dt, camDir);
             }
 
-
+            skinningShader->use();
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture3);
+            animator.UpdateAnimation(dt);
+            skinningShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+            auto transforms = animator.GetFinalBoneMatrices();
+            for (int i = 0; i < transforms.size(); ++i)
+            {
+                skinningShader->setUniform("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+            }
+            player1.Draw(skinningShader, camDir, won);
 
-            player1.Draw(modelShader, camDir, won);
+            modelShader->use();
             modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
             floor.Draw(modelShader);
             map.Draw(modelShader);
@@ -629,6 +638,7 @@ int main(int argc, char** argv) {
                 setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
                 key.Draw(pbsShader);
             }
+
            
             modelShader->use();
 
