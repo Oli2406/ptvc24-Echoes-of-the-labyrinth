@@ -85,6 +85,8 @@ int keyCounter = 0;
 
 bool won = false;
 bool pbsDemo = false;
+bool drawWalk = false;
+bool drawIdle = true;
 
 
 
@@ -333,10 +335,15 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0], gPhysics, gScene, false);
 
-        string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer1.fbx");
+        string path4 = gcgFindTextureFile("assets/geometry/adventurer/walk.fbx");
         Model adventurer(&path4[0], gPhysics, gScene, true);
-        Animation walk(path4, &adventurer);
-        Animator animator(&walk);
+        Animation idle(path4, &adventurer);
+        Animator idleAnimator(&idle);
+
+        string walkPath = gcgFindTextureFile("assets/geometry/adventurer/idle.fbx");
+        Model walkModel(&walkPath[0]);
+        Animation walk(walkPath, &walkModel);
+        Animator walkAnimator(&walk);
 
         string path5 = gcgFindTextureFile("assets/geometry/key/key.obj");
         Model key(&path5[0], gPhysics, gScene, false);
@@ -347,7 +354,6 @@ int main(int argc, char** argv) {
         string path7 = gcgFindTextureFile("assets/geometry/lava/lava.obj");
         Model lava(&path7[0]);
 
-        //Physics simulation;
         Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getController());
 
         player1.set(adventurer);
@@ -528,8 +534,10 @@ int main(int argc, char** argv) {
         pbsShader->use();
         pbsShader->setUniform("skybox", 1);
         pbsShader->setUniform("shadowMap", 2);
-        pbsShader->setUniform("normalMap", 3);
+        skinningShader->use();
         skinningShader->setUniform("texture_diffuse", 0);
+        skinningShader->setUniform("skybox", 1);
+        skinningShader->setUniform("shadowMap", 2);
         
         
         glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
@@ -539,7 +547,6 @@ int main(int argc, char** argv) {
         while (!glfwWindowShouldClose(window)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            animator.UpdateAnimation(dt);
 
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
@@ -564,7 +571,7 @@ int main(int argc, char** argv) {
             map.Draw(depthShader);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             podest.Draw(depthShader);
-            //modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(depthShader);
             
@@ -588,7 +595,6 @@ int main(int argc, char** argv) {
                 modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
                 modelShader->setUniform("materialCoefficients", materialCoefficients);
                 modelShader->setUniform("specularAlpha", alpha);
-                // Set per-frame uniforms
                 setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
                 modelShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
                 modelShader->setUniform("gamma", gammaEnabled);
@@ -600,17 +606,45 @@ int main(int argc, char** argv) {
                 player1.checkInputs(window, dt, camDir);
             }
 
-            skinningShader->use();
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture3);
-            animator.UpdateAnimation(dt);
-            skinningShader->setUniform("viewProjMatrix", viewProjectionMatrix);
-            auto transforms = animator.GetFinalBoneMatrices();
-            for (int i = 0; i < transforms.size(); ++i)
-            {
-                skinningShader->setUniform("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+            if (drawWalk && !drawIdle) {
+                skinningShader->use();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, texture3);
+                skinningShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+                skinningShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+                skinningShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
+                setPerFrameUniforms(skinningShader.get(), camera, dirL, pointL);
+                skinningShader->setUniform("materialCoefficients", materialCoefficients);
+                skinningShader->setUniform("specularAlpha", alpha);
+                auto transforms = idleAnimator.GetFinalBoneMatrices();
+                skinningShader->setUniform("gamma", gammaEnabled);
+                idleAnimator.UpdateAnimation(dt);
+                for (int i = 0; i < transforms.size(); ++i)
+                {
+                    skinningShader->setUniform("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+                }
+                player1.Draw(skinningShader, camDir, won);
             }
-            player1.Draw(skinningShader, camDir, won);
+            if(drawIdle && !drawWalk) {
+                skinningShader->use();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, texture3);
+                skinningShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+                skinningShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+                skinningShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
+                setPerFrameUniforms(skinningShader.get(), camera, dirL, pointL);
+                skinningShader->setUniform("materialCoefficients", materialCoefficients);
+                skinningShader->setUniform("specularAlpha", alpha);
+                auto transforms = walkAnimator.GetFinalBoneMatrices();
+                skinningShader->setUniform("gamma", gammaEnabled);
+                walkAnimator.UpdateAnimation(dt);
+                for (int i = 0; i < transforms.size(); ++i)
+                {
+                    skinningShader->setUniform("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+                }
+                player1.Draw(skinningShader, camDir, won);
+            }
+            
 
             modelShader->use();
             modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
@@ -624,16 +658,19 @@ int main(int argc, char** argv) {
             pbsShader->setUniform("viewProjMatrix", viewProjectionMatrix);
             pbsShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
             pbsShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            pbsShader->setUniform("interpolationFactor", 0.005f);
             setPerFrameUniforms(pbsShader.get(), camera, dirL, pointL);
             setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 0.7f);
             podest.Draw(pbsShader);
-            //modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-            /**/pbsShader->setUniform("modelMatrix", /*modelDiamiond*/mat4(1.0f));
-            setPBRProperties(pbsShader.get(), 1.0f, 1.0f, 1.0f);
+            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+            pbsShader->setUniform("modelMatrix", modelDiamiond);
+            pbsShader->setUniform("interpolationFactor", 0.1f);
+            setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
             diamond.Draw(pbsShader);
             if (pbsDemo) {
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey1, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z)));
                 key.Draw(pbsShader);
+                pbsShader->setUniform("interpolationFactor", 0.001f);
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey2, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z + 2)));
                 setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
                 key.Draw(pbsShader);
@@ -961,11 +998,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     // F2 - Culling
     // Esc - Exit
 
-    if (action != GLFW_RELEASE)
+    if (action != GLFW_RELEASE && action != GLFW_PRESS)
         return;
 
     switch (key) {
-    case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(window, true); break;
+    case GLFW_KEY_ESCAPE:
+        glfwSetWindowShouldClose(window, true);
+        break;
     case GLFW_KEY_F1:
         _wireframe = !_wireframe;
         glPolygonMode(GL_FRONT_AND_BACK, _wireframe ? GL_LINE : GL_FILL);
@@ -989,9 +1028,26 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     case GLFW_KEY_P:
         pbsDemo = !pbsDemo;
         break;
+    case GLFW_KEY_W:
+    case GLFW_KEY_A:
+    case GLFW_KEY_S:
+    case GLFW_KEY_D:
+        if (action == GLFW_PRESS) {
+            drawWalk = true;
+            drawIdle = false;
+        }
+        else if (action == GLFW_RELEASE) {
+            bool anyKeyPressed = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ||
+                glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||
+                glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ||
+                glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+            drawWalk = anyKeyPressed;
+            drawIdle = !anyKeyPressed;
+        }
+        break;
     }
-
 }
+
 
 static void APIENTRY DebugCallbackDefault(
     GLenum source,

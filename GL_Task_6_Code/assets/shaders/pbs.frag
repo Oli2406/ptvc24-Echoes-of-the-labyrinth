@@ -13,6 +13,7 @@ uniform sampler2D texture_diffuse;  // Texture unit 0
 uniform float metallic;
 uniform float roughness;
 uniform float ao;
+uniform float interpolationFactor;
 
 uniform sampler2D shadowMap;  // Texture unit 1
 uniform samplerCube skybox;   // Texture unit 2
@@ -154,7 +155,7 @@ void main() {
     // Combine with ambient occlusion
     vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 finalColor = ambient + Lo;
-    finalColor = mix(finalColor, envColor, 0.005f);
+    finalColor = mix(finalColor, envColor, interpolationFactor);
 
     // Tone mapping and gamma correction
     finalColor = finalColor / (finalColor + vec3(1.0));
