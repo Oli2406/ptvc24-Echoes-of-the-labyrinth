@@ -97,6 +97,7 @@ bool pbsDemo = false;
 bool drawWalk = false;
 bool drawIdle = true;
 bool InfiniteJumpEnabled = false;
+bool drawHud = true;
 
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
@@ -597,7 +598,10 @@ int main(int argc, char** argv) {
             modelShader->use();
 
             glfwPollEvents();
-            setupHUD(io, keyCounter, window_width, window_height, health);
+            if (drawHud) {
+                setupHUD(io, keyCounter, window_width, window_height, health);
+            }
+            
 
             viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
             camDir = camera.extractCameraDirection(viewMatrix);
@@ -802,7 +806,10 @@ int main(int argc, char** argv) {
             dt = (t - dt);
             t_sum += dt;
 
-            RenderHUD();
+            if (drawHud) {
+                RenderHUD();
+            }
+            
   
             // Swap buffers
             glfwSwapBuffers(window);
@@ -1043,6 +1050,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     case GLFW_KEY_P:
         if (action == GLFW_PRESS) {
             pbsDemo = !pbsDemo;
+        }
+        break;
+    case GLFW_KEY_H:
+        if (action == GLFW_PRESS) {
+            drawHud = !drawHud;
         }
         break;
     case GLFW_KEY_J:
