@@ -547,15 +547,8 @@ int main(int argc, char** argv) {
         pbsShader->setUniform("shadowMap", 2);
         skinningShader->use();
         skinningShader->setUniform("texture_diffuse", 0);
-<<<<<<< HEAD
-
-
-=======
         skinningShader->setUniform("skybox", 1);
         skinningShader->setUniform("shadowMap", 2);
-        
-        
->>>>>>> a223170b23ab70b47550ebd4f1bffec400c7ac47
         glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
         lightPos *= 10;
@@ -812,14 +805,10 @@ int main(int argc, char** argv) {
             dt = (t - dt);
             t_sum += dt;
 
-<<<<<<< HEAD
-=======
             if (drawHud) {
                 RenderHUD();
             }
-            
-  
->>>>>>> a223170b23ab70b47550ebd4f1bffec400c7ac47
+
             // Swap buffers
             glfwSwapBuffers(window);
         }
