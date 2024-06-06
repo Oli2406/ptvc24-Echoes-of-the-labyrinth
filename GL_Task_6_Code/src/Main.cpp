@@ -57,9 +57,10 @@ void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float
 void setPBRProperties(Shader* shader, float metallic, float roughness, float ao);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 ImGuiIO setupImGUI(GLFWwindow* window);
-void setupHUD(ImGuiIO io, int keyCounter, int width, int height, int health);
+void setupHUD(ImGuiIO io, int keyCounter, int width, int height, int health, GLint splashArt, GLint keyArt);
 void RenderHUD();
 GLuint LoadTexture(const char* filename);
+
 
 /* --------------------------------------------- */
 // Global variables
@@ -282,7 +283,8 @@ int main(int argc, char** argv) {
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
         std::shared_ptr<Texture> torchTexture = std::make_shared<Texture>("assets/textures/torch.dds");
-        std::shared_ptr<Texture> keyTexture = std::make_shared<Texture>("assets/textures/gelb.dds");
+        
+        //std::shared_ptr<Texture> keyTexture = std::make_shared<Texture>("assets/textures/gelb.dds");
 
         DDSImage img = loadDDS(gcgFindTextureFile("assets/textures/Militia-Texture.dds").c_str());
         GLuint texture3;
@@ -306,7 +308,7 @@ int main(int argc, char** argv) {
         std::shared_ptr<Material> torchTextureMaterial = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, torchTexture);
         std::shared_ptr<Material> fireShadow = std::make_shared<TextureMaterial>(depthShader, glm::vec3(0.1f, 0.7f, 0.1f), 2.0f, fireTexture);
         std::shared_ptr<Material> torchShadow = std::make_shared<TextureMaterial>(depthShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, torchTexture);
-        std::shared_ptr<Material> keyColor = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, keyTexture);
+        //std::shared_ptr<Material> keyColor = std::make_shared<TextureMaterial>(textureShader, glm::vec3(0.1f, 0.7f, 0.3f), 8.0f, keyTexture);
 
         // Create geometry
         Geometry fire = Geometry(
@@ -555,6 +557,11 @@ int main(int argc, char** argv) {
         
         ImGuiIO io = setupImGUI(window);
 
+        string daPath = gcgFindTextureFile("assets/uiPictures/portrait.png");
+        GLuint splashArt = LoadTexture(daPath.c_str());
+        string keyPath = gcgFindTextureFile("assets/uiPictures/key.png");
+        GLuint keyArt = LoadTexture(keyPath.c_str());
+
         while (!glfwWindowShouldClose(window)) {
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -598,7 +605,7 @@ int main(int argc, char** argv) {
 
             glfwPollEvents();
             if (drawHud) {
-                setupHUD(io, keyCounter, window_width, window_height, health);
+                setupHUD(io, keyCounter, window_width, window_height, health, splashArt, keyArt);
             }
             
 
@@ -1298,14 +1305,10 @@ ImGuiIO setupImGUI(GLFWwindow* window) {
     return io;
 }
 
-void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health) {
-    // Initialize the start time
-    static double start_time = glfwGetTime();
-    string path = gcgFindTextureFile("assets/uiPictures/portrait.png");
-    GLuint splashArt = LoadTexture(path.c_str());
-    string keyPath = gcgFindTextureFile("assets/uiPictures/key.png");
-    GLuint keyArt = LoadTexture(keyPath.c_str());
+void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health, GLint splashArt, GLint keyArt) {
 
+    static double start_time = glfwGetTime();
+    
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
