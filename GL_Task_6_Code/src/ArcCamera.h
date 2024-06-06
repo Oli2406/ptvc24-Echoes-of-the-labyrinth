@@ -18,8 +18,22 @@ private:
 	float sensitivity;
 	vec3 pos;
 	const float PI = 3.14f;
+	struct FrustumPlane {
+		glm::vec3 normal;
+		float distance;
+
+		FrustumPlane() : normal(0.0f), distance(0.0f) {}
+		FrustumPlane(const glm::vec3& normal, float distance) : normal(normal), distance(distance) {}
+
+		float distanceToPoint(const glm::vec3& point) const {
+			return glm::dot(normal, point) + distance;
+		}
+	};
+
+	FrustumPlane frustumPlanes[6];
 
 public:
+
 	ArcCamera() {
 		//default values.
 		radius = 1.0f;
@@ -40,7 +54,7 @@ public:
 	mat4 calculateMatrix(float radius, float pitch, float yaw, Player& player) {
 		//compute camera Position with Euler Angles
 		float x = radius * sin(yaw) * cos(pitch) - player.getPosition().x;
-		float y = radius * sin(pitch) + player.getPosition().y;
+		float y = radius * sin(pitch) + player.getPosition().y + 0.3f;
 		float z = radius * cos(yaw) * cos(pitch) + player.getPosition().z;
 		vec3 position(-x, y, z);
 		pos = position;
@@ -82,8 +96,65 @@ public:
 
 
 	void zoom(float yoffset) {
-		//Calculate the zoom and limit it.
 		radius -= yoffset;
-		radius = glm::clamp(radius, 3.0f, 100.0f);
+		radius = glm::clamp(radius, 2.0f, 2.0f);
+	}
+	void ArcCamera::updateFrustumPlanes(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
+		glm::mat4 clip = projectionMatrix * viewMatrix;
+
+		frustumPlanes[0].normal = glm::vec3(clip[0][3] - clip[0][0],
+			clip[1][3] - clip[1][0],
+			clip[2][3] - clip[2][0]);
+		frustumPlanes[0].distance = clip[3][3] - clip[3][0];
+
+
+		frustumPlanes[1].normal = glm::vec3(clip[0][3] + clip[0][0],
+			clip[1][3] + clip[1][0],
+			clip[2][3] + clip[2][0]);
+		frustumPlanes[1].distance = clip[3][3] + clip[3][0];
+
+		frustumPlanes[2].normal = glm::vec3(clip[0][3] + clip[0][1],
+			clip[1][3] + clip[1][1],
+			clip[2][3] + clip[2][1]);
+		frustumPlanes[2].distance = clip[3][3] + clip[3][1];
+
+		frustumPlanes[3].normal = glm::vec3(clip[0][3] - clip[0][1],
+			clip[1][3] - clip[1][1],
+			clip[2][3] - clip[2][1]);
+		frustumPlanes[3].distance = clip[3][3] - clip[3][1];
+
+		frustumPlanes[4].normal = glm::vec3(clip[0][3] - clip[0][2],
+			clip[1][3] - clip[1][2],
+			clip[2][3] - clip[2][2]);
+		frustumPlanes[4].distance = clip[3][3] - clip[3][2];
+
+		frustumPlanes[5].normal = glm::vec3(clip[0][3] + clip[0][2],
+			clip[1][3] + clip[1][2],
+			clip[2][3] + clip[2][2]);
+		frustumPlanes[5].distance = clip[3][3] + clip[3][2];
+
+		for (int i = 0; i < 6; ++i) {
+			float length = glm::length(frustumPlanes[i].normal);
+			frustumPlanes[i].normal /= length;
+			frustumPlanes[i].distance /= length;
+		}
+	}
+
+	bool ArcCamera::isPointInFrustum(const glm::vec3& point) const {
+		for (int i = 0; i < 6; ++i) {
+			if (frustumPlanes[i].distanceToPoint(point) < 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool ArcCamera::isSphereInFrustum(const glm::vec3& center, float radius) const {
+		for (int i = 0; i < 6; ++i) {
+			if (frustumPlanes[i].distanceToPoint(center) < -radius) {
+				return false;
+			}
+		}
+		return true;
 	}
 };

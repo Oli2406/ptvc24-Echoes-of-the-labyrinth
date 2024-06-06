@@ -24,6 +24,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H  
 #include "globals.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 
 #undef min
@@ -52,6 +55,11 @@ void initPhysics();
 void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec3 key3, glm::vec3 key4, glm::vec3 key5, glm::vec3 key6, glm::vec3 key7, glm::vec3 key8);
 void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float y, float scale, glm::vec3 color);
 void setPBRProperties(Shader* shader, float metallic, float roughness, float ao);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+ImGuiIO setupImGUI(GLFWwindow* window);
+void setupHUD(ImGuiIO io, int keyCounter, int width, int height, int health);
+void RenderHUD();
+GLuint LoadTexture(const char* filename);
 
 /* --------------------------------------------- */
 // Global variables
@@ -83,12 +91,14 @@ bool key7Found = false;
 bool key8Found = false;
 
 int keyCounter = 0;
+int health = 100;
 
 bool won = false;
 bool pbsDemo = false;
-
-
-
+bool drawWalk = false;
+bool drawIdle = true;
+bool InfiniteJumpEnabled = false;
+bool drawHud = true;
 
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
@@ -134,8 +144,8 @@ int main(int argc, char** argv) {
 
     INIReader window_reader("assets/settings/window.ini");
 
-    int window_width = 1920;
-    int window_height = 1080;
+    int window_width = window_reader.GetInteger("window", "width", 1920);
+    int window_height = window_reader.GetInteger("window", "height", 1080);
     int refresh_rate = window_reader.GetInteger("window", "refresh_rate", 60);
     bool fullscreen = window_reader.GetBoolean("window", "fullscreen", false);
     std::string window_title = "Echoes of the Labyrinth";
@@ -232,6 +242,7 @@ int main(int argc, char** argv) {
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // set GL defaults
     glClearColor(1.0, 0.8, 1.0, 1);
@@ -266,6 +277,7 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> fontShader = std::make_shared<Shader>("assets/shaders/font.vert", "assets/shaders/font.frag");
         std::shared_ptr<Shader> pbsShader = std::make_shared<Shader>("assets/shaders/pbs.vert", "assets/shaders/pbs.frag");
         std::shared_ptr<Shader> skinningShader = std::make_shared<Shader>("assets/shaders/skinning.vert", "assets/shaders/skinning.frag");
+        std::shared_ptr<Shader> puzzleShader = std::make_shared<Shader>("assets/shaders/puzzle.vert", "assets/shaders/puzzle.frag");
 
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
@@ -334,10 +346,15 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0], gPhysics, gScene, false);
 
-        string path4 = gcgFindTextureFile("assets/geometry/adventurer/adventurer1.fbx");
+        string path4 = gcgFindTextureFile("assets/geometry/adventurer/walk.fbx");
         Model adventurer(&path4[0], gPhysics, gScene, true);
-        Animation walk(path4, &adventurer);
-        Animator animator(&walk);
+        Animation idle(path4, &adventurer);
+        Animator idleAnimator(&idle);
+
+        string walkPath = gcgFindTextureFile("assets/geometry/adventurer/idle.fbx");
+        Model walkModel(&walkPath[0]);
+        Animation walk(walkPath, &walkModel);
+        Animator walkAnimator(&walk);
 
         string path5 = gcgFindTextureFile("assets/geometry/key/key.obj");
         Model key(&path5[0], gPhysics, gScene, false);
@@ -348,7 +365,6 @@ int main(int argc, char** argv) {
         string path7 = gcgFindTextureFile("assets/geometry/lava/lava.obj");
         Model lava(&path7[0]);
 
-        //Physics simulation;
         Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getController());
 
         player1.set(adventurer);
@@ -529,19 +545,27 @@ int main(int argc, char** argv) {
         pbsShader->use();
         pbsShader->setUniform("skybox", 1);
         pbsShader->setUniform("shadowMap", 2);
-        pbsShader->setUniform("normalMap", 3);
+        skinningShader->use();
         skinningShader->setUniform("texture_diffuse", 0);
+<<<<<<< HEAD
 
 
+=======
+        skinningShader->setUniform("skybox", 1);
+        skinningShader->setUniform("shadowMap", 2);
+        
+        
+>>>>>>> a223170b23ab70b47550ebd4f1bffec400c7ac47
         glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
         lightPos *= 10;
+        
+        ImGuiIO io = setupImGUI(window);
 
         while (!glfwWindowShouldClose(window)) {
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            animator.UpdateAnimation(dt);
-
+            
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
             float near_plane = 0.1f, far_plane = 100.0f;
@@ -565,7 +589,7 @@ int main(int argc, char** argv) {
             map.Draw(depthShader);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             podest.Draw(depthShader);
-            //modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             depthShader->setUniform("modelMatrix", modelDiamiond);
             diamond.Draw(depthShader);
 
@@ -580,6 +604,10 @@ int main(int argc, char** argv) {
             modelShader->use();
 
             glfwPollEvents();
+            if (drawHud) {
+                setupHUD(io, keyCounter, window_width, window_height, health);
+            }
+            
 
             viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
             camDir = camera.extractCameraDirection(viewMatrix);
@@ -589,7 +617,6 @@ int main(int argc, char** argv) {
                 modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
                 modelShader->setUniform("materialCoefficients", materialCoefficients);
                 modelShader->setUniform("specularAlpha", alpha);
-                // Set per-frame uniforms
                 setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
                 modelShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
                 modelShader->setUniform("gamma", gammaEnabled);
@@ -598,20 +625,48 @@ int main(int argc, char** argv) {
             glBindTexture(GL_TEXTURE_2D, depthMap);
 
             if (!won) {
-                player1.checkInputs(window, dt, camDir);
+                player1.checkInputs(window, dt, camDir, InfiniteJumpEnabled);
             }
 
-            skinningShader->use();
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture3);
-            animator.UpdateAnimation(dt);
-            skinningShader->setUniform("viewProjMatrix", viewProjectionMatrix);
-            auto transforms = animator.GetFinalBoneMatrices();
-            for (int i = 0; i < transforms.size(); ++i)
-            {
-                skinningShader->setUniform("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+            if (drawWalk && !drawIdle) {
+                skinningShader->use();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, texture3);
+                skinningShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+                skinningShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+                skinningShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
+                setPerFrameUniforms(skinningShader.get(), camera, dirL, pointL);
+                skinningShader->setUniform("materialCoefficients", materialCoefficients);
+                skinningShader->setUniform("specularAlpha", alpha);
+                auto transforms = idleAnimator.GetFinalBoneMatrices();
+                skinningShader->setUniform("gamma", gammaEnabled);
+                idleAnimator.UpdateAnimation(dt);
+                for (int i = 0; i < transforms.size(); ++i)
+                {
+                    skinningShader->setUniform("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+                }
+                player1.Draw(skinningShader, camDir, won);
             }
-            player1.Draw(skinningShader, camDir, won);
+            if(drawIdle && !drawWalk) {
+                skinningShader->use();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, texture3);
+                skinningShader->setUniform("viewProjMatrix", viewProjectionMatrix);
+                skinningShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+                skinningShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
+                setPerFrameUniforms(skinningShader.get(), camera, dirL, pointL);
+                skinningShader->setUniform("materialCoefficients", materialCoefficients);
+                skinningShader->setUniform("specularAlpha", alpha);
+                auto transforms = walkAnimator.GetFinalBoneMatrices();
+                skinningShader->setUniform("gamma", gammaEnabled);
+                walkAnimator.UpdateAnimation(dt);
+                for (int i = 0; i < transforms.size(); ++i)
+                {
+                    skinningShader->setUniform("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+                }
+                player1.Draw(skinningShader, camDir, won);
+            }
+            
 
             modelShader->use();
             modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
@@ -625,16 +680,19 @@ int main(int argc, char** argv) {
             pbsShader->setUniform("viewProjMatrix", viewProjectionMatrix);
             pbsShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(play))));
             pbsShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            pbsShader->setUniform("interpolationFactor", 0.005f);
             setPerFrameUniforms(pbsShader.get(), camera, dirL, pointL);
             setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 0.7f);
             podest.Draw(pbsShader);
-            //modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-            /**/pbsShader->setUniform("modelMatrix", /*modelDiamiond*/mat4(1.0f));
-            setPBRProperties(pbsShader.get(), 1.0f, 1.0f, 1.0f);
+            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+            pbsShader->setUniform("modelMatrix", modelDiamiond);
+            pbsShader->setUniform("interpolationFactor", 0.05f);
+            setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
             diamond.Draw(pbsShader);
             if (pbsDemo) {
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey1, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z)));
                 key.Draw(pbsShader);
+                pbsShader->setUniform("interpolationFactor", 0.001f);
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey2, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z + 2)));
                 setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
                 key.Draw(pbsShader);
@@ -754,28 +812,27 @@ int main(int argc, char** argv) {
             dt = (t - dt);
             t_sum += dt;
 
+<<<<<<< HEAD
+=======
+            if (drawHud) {
+                RenderHUD();
+            }
+            
+  
+>>>>>>> a223170b23ab70b47550ebd4f1bffec400c7ac47
             // Swap buffers
             glfwSwapBuffers(window);
         }
     }
-
-    /* --------------------------------------------- */
-    // Destroy framework
-    /* --------------------------------------------- */
-
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     destroyFramework();
-
-    /* --------------------------------------------- */
-    // Destroy context and exit
-    /* --------------------------------------------- */
-
     glfwTerminate();
-
     return EXIT_SUCCESS;
 }
 
-// render line of text
-// -------------------
+
 void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float y, float scale, glm::vec3 color)
 {
     // activate corresponding render state	
@@ -884,13 +941,11 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
         key8Found = true;
     }
 
-    if (x < 0 + 1.2 && x > 0 - 1.2 && z < 0 + 1.2 && z > 0 - 1.2) {
+    if (x < 0 + 1.2 && x > 0 - 1.2 && z < 0 + 1.2 && z > 0 - 1.2 && y > -2.0 && y < 2.0) {
         won = true;
     }
 }
 
-// renderQuad() renders a 1x1 XY quad in NDC
-// -----------------------------------------
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
 void renderQuad()
@@ -958,41 +1013,94 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset) {
 
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    // F1 - Wireframe
-    // F2 - Culling
-    // Esc - Exit
-
-    if (action != GLFW_RELEASE)
+    if (action != GLFW_PRESS && action != GLFW_RELEASE)
         return;
 
     switch (key) {
-    case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(window, true); break;
+    case GLFW_KEY_ESCAPE:
+        if (action == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, true);
+        break;
     case GLFW_KEY_F1:
-        _wireframe = !_wireframe;
-        glPolygonMode(GL_FRONT_AND_BACK, _wireframe ? GL_LINE : GL_FILL);
+        if (action == GLFW_PRESS) {
+            _wireframe = !_wireframe;
+            glPolygonMode(GL_FRONT_AND_BACK, _wireframe ? GL_LINE : GL_FILL);
+        }
         break;
     case GLFW_KEY_F2:
-        _culling = !_culling;
-        if (_culling)
-            glEnable(GL_CULL_FACE);
-        else
-            glDisable(GL_CULL_FACE);
+        if (action == GLFW_PRESS) {
+            _culling = !_culling;
+            if (_culling)
+                glEnable(GL_CULL_FACE);
+            else
+                glDisable(GL_CULL_FACE);
+        }
+        break;
+    case GLFW_KEY_F6:
+        if (action == GLFW_PRESS) {
+            InfiniteJumpEnabled = !InfiniteJumpEnabled;
+        }
         break;
     case GLFW_KEY_N:
-        _draw_normals = !_draw_normals;
+        if (action == GLFW_PRESS) {
+            _draw_normals = !_draw_normals;
+        }
         break;
     case GLFW_KEY_T:
-        _draw_texcoords = !_draw_texcoords;
+        if (action == GLFW_PRESS) {
+            _draw_texcoords = !_draw_texcoords;
+        }
         break;
     case GLFW_KEY_G:
-        gammaEnabled = !gammaEnabled;
+        if (action == GLFW_PRESS) {
+            gammaEnabled = !gammaEnabled;
+        }
         break;
     case GLFW_KEY_P:
-        pbsDemo = !pbsDemo;
+        if (action == GLFW_PRESS) {
+            pbsDemo = !pbsDemo;
+        }
+        break;
+    case GLFW_KEY_H:
+        if (action == GLFW_PRESS) {
+            drawHud = !drawHud;
+        }
+        break;
+    case GLFW_KEY_J:
+        if (health-- < 0) {
+            health = 100;
+        }
+        health--;
+        break;
+    case GLFW_KEY_K:
+        health++;
+        if (health++ > 100) {
+            health = 0;
+        }
+        break;
+    case GLFW_KEY_W:
+    case GLFW_KEY_A:
+    case GLFW_KEY_S:
+    case GLFW_KEY_D:
+        if (action == GLFW_PRESS) {
+            drawWalk = true;
+            drawIdle = false;
+        }
+        else if (action == GLFW_RELEASE) {
+            bool anyKeyPressed = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ||
+                glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||
+                glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ||
+                glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+            drawWalk = anyKeyPressed;
+            drawIdle = !anyKeyPressed;
+        }
         break;
     }
-
 }
+
+
+
+
 
 static void APIENTRY DebugCallbackDefault(
     GLenum source,
@@ -1183,4 +1291,113 @@ void setPBRProperties(Shader* shader, float metallic, float roughness, float ao)
     shader->setUniform("ao", ao);
     shader->setUniform("roughness", roughness);
     shader->setUniform("metallic", metallic);
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+
+ImGuiIO setupImGUI(GLFWwindow* window) {
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
+    return io;
+}
+
+void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health) {
+    // Initialize the start time
+    static double start_time = glfwGetTime();
+    string path = gcgFindTextureFile("assets/uiPictures/portrait.png");
+    GLuint splashArt = LoadTexture(path.c_str());
+    string keyPath = gcgFindTextureFile("assets/uiPictures/key.png");
+    GLuint keyArt = LoadTexture(keyPath.c_str());
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(width / 8.1, height / 5.5), ImGuiCond_Once);
+    ImGui::Begin("Portrait", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+    {
+        ImGui::Image((void*)(intptr_t)splashArt, ImVec2(width / 9.14, height / 7.2));
+    }
+    ImGui::End();
+    ImGui::SetNextWindowPos(ImVec2(width / 9.15, 0), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(width / 4.4, height / 13.5), ImGuiCond_Once);
+    ImGui::Begin("Health", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+    {
+        int myHealth = health;
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        ImVec2 size = ImVec2(width / 4.8, height / 27);
+        float fraction = myHealth / 100.0f;
+
+        ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + size.x, p.y + size.y), IM_COL32(60, 60, 60, 255));
+
+        ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + size.x * fraction, p.y + size.y), IM_COL32(255, 0, 0, 255));
+
+        ImGui::SetWindowFontScale(width / 768);
+        ImGui::GetWindowDrawList()->AddText(ImVec2(p.x + size.x / 2 - ImGui::CalcTextSize(std::to_string(myHealth).c_str()).x / 2, p.y), IM_COL32(255, 255, 255, 255), std::to_string(myHealth).c_str());
+        ImGui::SetWindowFontScale(1.0f);
+
+        ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + size.y + 10));
+    }
+    ImGui::End();
+    ImGui::SetNextWindowPos(ImVec2(width / 1.25, height / 1.06), ImGuiCond_Once);
+    ImGui::Begin("Time", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+    {
+        double current_time = glfwGetTime();
+        double elapsed_time = current_time - start_time;
+        ImGui::SetWindowFontScale(width / 960);
+        ImGui::Text("Time Elapsed: %.2f seconds", elapsed_time);
+        ImGui::SetWindowFontScale(1.0f);
+    }
+    ImGui::End();
+    ImGui::SetNextWindowPos(ImVec2(width / 1.12, 0), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(width / 9.5, height / 4.5), ImGuiCond_Once);
+    ImGui::Begin("Keys", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+    {
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        ImVec2 size = ImVec2(width / 19.2, height / 108);
+        ImGui::SetWindowFontScale(width / 960);
+        ImGui::GetWindowDrawList()->AddText(ImVec2(p.x + size.x - ImGui::CalcTextSize(std::to_string(keyCount).c_str()).x, p.y), IM_COL32(255, 255, 255, 255), std::to_string(keyCount).c_str());
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::Image((void*)(intptr_t)keyArt, ImVec2(width / 10.1, height / 5.4));
+    }
+    ImGui::End();
+}
+
+void RenderHUD() {
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+GLuint LoadTexture(const char* filename) {
+    int width, height, nrChannels;
+    unsigned char* data = stbi_load(filename, &width, &height, &nrChannels, 0);
+    if (!data) {
+        std::cerr << "Failed to load texture: " << filename << std::endl;
+        return 0;
+    }
+
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, nrChannels == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_image_free(data);
+
+    return textureID;
 }

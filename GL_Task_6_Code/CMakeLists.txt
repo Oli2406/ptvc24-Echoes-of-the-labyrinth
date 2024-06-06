@@ -21,6 +21,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 file(GLOB SOURCES "src/*.cpp" "src/*.h")
 set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/include/physx")
+
 if(UNIX AND NOT APPLE)
     set(LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/linux" ".")
 elseif(UNIX AND APPLE)
@@ -31,6 +32,18 @@ endif()
 
 find_package(OpenGL REQUIRED)
 
+# ImGui source files
+set(IMGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/imgui")
+file(GLOB IMGUI_SOURCES
+    "${IMGUI_DIR}/*.cpp"
+    "${IMGUI_DIR}/imgui_impl_glfw.cpp"
+    "${IMGUI_DIR}/imgui_impl_opengl3.cpp"
+)
+
+# Include ImGui headers
+set(IMGUI_INCLUDE_DIRS
+    "${IMGUI_DIR}"
+)
 
 set(LINK_LIBRARIES
     debug glfw3d optimized glfw3
@@ -50,12 +63,14 @@ set(LINK_LIBRARIES
     debug PhysXCharacterKinematic_static_64_debug optimized PhysXCharacterKinematic_static_64
     OpenGL::GL
 )
+
 message(LINK_LIBRARIES=${LINK_LIBRARIES})
 
-add_executable(${PROJECT_NAME} ${SOURCES}  )
-target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
+add_executable(${PROJECT_NAME} ${SOURCES} ${IMGUI_SOURCES} "src/ImGuiHUD.h")
+target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS} ${IMGUI_INCLUDE_DIRS})
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBRARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBRARIES})
+
 # IDE specific settings
 if(CMAKE_GENERATOR MATCHES "Visual Studio")
    set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")

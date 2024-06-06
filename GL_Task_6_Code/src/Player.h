@@ -32,6 +32,9 @@ private:
     float moveForce = 2.5f;
     glm::mat4 modelMatrix;
     PxVec3 velocity;
+    const float normalSpeedMultiplier = 1.0f;
+    const float boostedSpeedMultiplier = 3.0f;
+
 
 public:
     Player(Model model, float rotX, float rotY, float rotZ, float scale, PxController* characterController)
@@ -62,10 +65,10 @@ public:
         rotationMatrix[1] = glm::vec4(up, 0.0f);
         rotationMatrix[2] = glm::vec4(forward, 0.0f);
 
-        glm::vec3 glmPosition(playerPos.x, playerPos.y - 1.5f, playerPos.z);
+        glm::vec3 glmPosition(playerPos.x, playerPos.y - 1.5, playerPos.z);
 
         modelMatrix = glm::translate(glm::mat4(1.0f), glmPosition) * rotationMatrix;
-        //modelMatrix = glm::rotate(modelMatrix, glm::radians(180.0f), glm::vec3(0.0, 0.0, 1.0));
+        //modelMatrix = glm::rotate(modelMatrix, glm::radians(180.0f), glm::vec3(0.0, 1.0, 0.0));
         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.01f));
     }
 
@@ -81,7 +84,7 @@ public:
     void set(Model model) {
         this->model = model;
         this->position = PxVec3(characterController->getPosition().x, characterController->getPosition().y, characterController->getPosition().z);
-        
+
     }
 
     void updatePlayerRotation(PxController* controller, glm::vec3 camDir) {
@@ -107,26 +110,28 @@ public:
         controller->getActor()->setGlobalPose(currentTransform);
     }
 
-    void checkInputs(GLFWwindow* window, float delta, glm::vec3 direction) {
+    void checkInputs(GLFWwindow* window, float delta, glm::vec3 direction, bool infiniteJumpEnabled) {
+        float speedMultiplier = infiniteJumpEnabled ? boostedSpeedMultiplier : normalSpeedMultiplier;
+
         glm::vec3 horizontalDirection = glm::normalize(glm::vec3(direction.x, 0.0f, direction.z));
         glm::vec3 verticalDirection = glm::normalize(glm::cross(horizontalDirection, glm::vec3(0.0f, 1.0f, 0.0f)));
 
         PxVec3 displacement(0.0f, 0.0f, 0.0f);
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            displacement += (PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * delta) * moveForce;
+            displacement += (PxVec3(horizontalDirection.x, 0.0f, horizontalDirection.z) * delta * moveForce * speedMultiplier);
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            displacement += (PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * delta) * moveForce;
+            displacement += (PxVec3(-horizontalDirection.x, 0.0f, -horizontalDirection.z) * delta * moveForce * speedMultiplier);
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            displacement += (PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * delta) * moveForce;
+            displacement += (PxVec3(-verticalDirection.x, 0.0f, -verticalDirection.z) * delta * moveForce * speedMultiplier);
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            displacement += (PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * delta) * moveForce;
+            displacement += (PxVec3(verticalDirection.x, 0.0f, verticalDirection.z) * delta * moveForce * speedMultiplier);
         }
 
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !isInAir) {
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && (!isInAir || infiniteJumpEnabled)) {
             velocity.y = JUMP_POWER;
             isInAir = true;
         }
@@ -149,5 +154,6 @@ public:
         else {
             isInAir = true;
         }
+
     }
 };
