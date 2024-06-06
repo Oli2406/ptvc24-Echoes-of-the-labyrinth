@@ -142,10 +142,10 @@ int main(int argc, char** argv) {
 
     INIReader window_reader("assets/settings/window.ini");
 
-    int window_width = 1920;
-    int window_height = 1080;
+    int window_width = window_reader.GetInteger("window", "width", 1920);
+    int window_height = window_reader.GetInteger("window", "height", 1080);
     int refresh_rate = window_reader.GetInteger("window", "refresh_rate", 60);
-    bool fullscreen = window_reader.GetBoolean("window", "fullscreen", true);
+    bool fullscreen = window_reader.GetBoolean("window", "fullscreen", false);
     std::string window_title = "Echoes of the Labyrinth";
     std::string init_camera_filepath = "assets/settings/camera_front.ini";
     if (cmdline_args.init_camera) {
@@ -1301,9 +1301,10 @@ void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health) {
     ImGui::NewFrame();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(width / 8.1, height / 5.5), ImGuiCond_Once);
     ImGui::Begin("Portrait", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
     {
-        ImGui::Image((void*)(intptr_t)splashArt, ImVec2(210, 150));
+        ImGui::Image((void*)(intptr_t)splashArt, ImVec2(width / 9.14, height / 7.2));
     }
     ImGui::End();
     ImGui::SetNextWindowPos(ImVec2(width / 9.15, 0), ImGuiCond_Once);
@@ -1319,7 +1320,7 @@ void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health) {
 
         ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + size.x * fraction, p.y + size.y), IM_COL32(255, 0, 0, 255));
 
-        ImGui::SetWindowFontScale(2.5f);
+        ImGui::SetWindowFontScale(width / 768);
         ImGui::GetWindowDrawList()->AddText(ImVec2(p.x + size.x / 2 - ImGui::CalcTextSize(std::to_string(myHealth).c_str()).x / 2, p.y), IM_COL32(255, 255, 255, 255), std::to_string(myHealth).c_str());
         ImGui::SetWindowFontScale(1.0f);
 
@@ -1331,20 +1332,21 @@ void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health) {
     {
         double current_time = glfwGetTime();
         double elapsed_time = current_time - start_time;
-        ImGui::SetWindowFontScale(2.0f);
+        ImGui::SetWindowFontScale(width / 960);
         ImGui::Text("Time Elapsed: %.2f seconds", elapsed_time);
         ImGui::SetWindowFontScale(1.0f);
     }
     ImGui::End();
-    ImGui::SetNextWindowPos(ImVec2(1720, 0));
+    ImGui::SetNextWindowPos(ImVec2(width / 1.12, 0), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(width / 9.5, height / 4.5), ImGuiCond_Once);
     ImGui::Begin("Keys", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
     {
         ImVec2 p = ImGui::GetCursorScreenPos();
         ImVec2 size = ImVec2(width / 19.2, height / 108);
-        ImGui::SetWindowFontScale(2.0f);
+        ImGui::SetWindowFontScale(width / 960);
         ImGui::GetWindowDrawList()->AddText(ImVec2(p.x + size.x - ImGui::CalcTextSize(std::to_string(keyCount).c_str()).x, p.y), IM_COL32(255, 255, 255, 255), std::to_string(keyCount).c_str());
         ImGui::SetWindowFontScale(1.0f);
-        ImGui::Image((void*)(intptr_t)keyArt, ImVec2(190, 200));
+        ImGui::Image((void*)(intptr_t)keyArt, ImVec2(width / 10.1, height / 5.4));
     }
     ImGui::End();
 }
