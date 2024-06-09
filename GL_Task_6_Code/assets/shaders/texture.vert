@@ -1,3 +1,4 @@
+
 #version 430 core
 /*
 * Copyright 2023 Vienna University of Technology.

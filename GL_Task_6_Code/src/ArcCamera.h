@@ -65,6 +65,20 @@ public:
 		return viewMatrix;
 	}
 
+	mat4 calculateMatrix2(float radius, float pitch, float yaw, float forward, float left) {
+		//compute camera Position with Euler Angles
+		float x = radius * sin(yaw) * cos(pitch) + left;
+		float y = radius * sin(pitch);
+		float z = radius * cos(yaw) * cos(pitch) + forward;
+		vec3 position(-x, y, z);
+		pos = position;
+		mat4 viewMatrix = translate(mat4(1.0f), position);
+		viewMatrix = glm::rotate(viewMatrix, yaw, vec3(0.0f, -1.0f, 0.0f));
+		viewMatrix = glm::rotate(viewMatrix, pitch, vec3(-1.0f, 0.0f, 0.0f));
+		viewMatrix = inverse(viewMatrix);
+		return viewMatrix;
+	}
+
 	vec3 extractCameraDirection(mat4 viewMatrix) {
 		mat4 invViewMatrix = inverse(viewMatrix);
 		vec3 cameraDirection = -vec3(invViewMatrix[2]);
@@ -97,7 +111,7 @@ public:
 
 	void zoom(float yoffset) {
 		radius -= yoffset;
-		radius = glm::clamp(radius, 2.0f, 2.0f);
+		radius = glm::clamp(radius, 0.0f, 200.0f);
 	}
 	void ArcCamera::updateFrustumPlanes(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
 		glm::mat4 clip = projectionMatrix * viewMatrix;

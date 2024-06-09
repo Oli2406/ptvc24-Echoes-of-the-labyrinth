@@ -39,13 +39,13 @@ class Model
 public:
 
 
-    Model(GLchar* path)
+    Model(GLchar* path, bool gamma)
     {
-        this->loadModel(path);
+        this->loadModel(path, gamma);
     }
 
-    Model(GLchar* path, PxPhysics* physics, PxScene* scene, bool isDynamic) {
-        this->loadModel(path);
+    Model(GLchar* path, PxPhysics* physics, PxScene* scene, bool isDynamic, bool gamma) {
+        this->loadModel(path, gamma);
         this->initPhysics(physics, scene, isDynamic);
     }
 
@@ -185,7 +185,7 @@ public:
         return triangleMesh;
     }
 private:
-    void loadModel(string const& path)
+    void loadModel(string const& path, bool gamma)
     {
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
@@ -198,20 +198,20 @@ private:
 
         directory = path.substr(0, path.find_last_of('/'));
 
-        processNode(scene->mRootNode, scene);
+        processNode(scene->mRootNode, scene, gamma);
     }
 
-    void processNode(aiNode* node, const aiScene* scene)
+    void processNode(aiNode* node, const aiScene* scene, bool gamma)
     {
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
 
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            meshes.push_back(processMesh(mesh, scene));
+            meshes.push_back(processMesh(mesh, scene, gamma));
         }
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            processNode(node->mChildren[i], scene);
+            processNode(node->mChildren[i], scene, gamma);
         }
 
     }
@@ -226,7 +226,7 @@ private:
     }
 
 
-    Mesh processMesh(aiMesh* mesh, const aiScene* scene)
+    Mesh processMesh(aiMesh* mesh, const aiScene* scene, bool gamma)
     {
         vector<Vertex> vertices;
         vector<unsigned int> indices;
@@ -259,9 +259,9 @@ private:
         }
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        vector<Text> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        vector<Text> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", gamma);
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-        vector<Text> normalMap = loadMaterialTextures(material, aiTextureType_NORMALS, "normalMap");
+        vector<Text> normalMap = loadMaterialTextures(material, aiTextureType_NORMALS, "normalMap", gamma);
         textures.insert(textures.end(), normalMap.begin(), normalMap.end());
 
         ExtractBoneWeightForVertices(vertices, mesh, scene);
@@ -321,7 +321,7 @@ private:
     }
 
 
-    unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false)
+    unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
     {
         string filename = string(path);
         filename = directory + '/' + filename;
@@ -334,15 +334,19 @@ private:
         if (data)
         {
             GLenum format;
-            if (nrComponents == 1)
-                format = GL_RED;
-            else if (nrComponents == 3)
-                format = GL_RGB;
-            else if (nrComponents == 4)
-                format = GL_RGBA;
+            GLenum dataFormat;
+            if (nrComponents == 1){
+                format = dataFormat = GL_RED;
+            } else if (nrComponents == 3) {
+                format = gamma ? GL_SRGB : GL_RGB;
+                dataFormat = GL_RGB;
+            } else if (nrComponents == 4) {
+                format = gamma ? GL_SRGB_ALPHA : GL_RGBA;
+                dataFormat = GL_RGBA;
+            }
 
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -372,7 +376,7 @@ private:
         return to;
     }
 
-    vector<Text> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
+    vector<Text> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName, bool gamma)
     {
         vector<Text> textures;
         for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -388,7 +392,7 @@ private:
             if (!skip)
             {   // if texture hasn't been loaded already, load it
                 Text texture;
-                texture.id = TextureFromFile(str.C_Str(), this->directory);
+                texture.id = TextureFromFile(str.C_Str(), this->directory, gamma);
                 texture.type = typeName;
                 texture.path = str.C_Str();
                 textures.push_back(texture);

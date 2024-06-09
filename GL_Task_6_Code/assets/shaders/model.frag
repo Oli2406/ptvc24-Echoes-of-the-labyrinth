@@ -39,9 +39,9 @@ vec3 phong(vec3 n, vec3 l, vec3 v, vec3 diffuseC, float diffuseF, vec3 specularC
 	float att = 1.0;	
 	if (attenuate) {
         if (gamma) {
-            att = 1.0 / (attenuation.x + d * d * attenuation.y + d * d * d * d * attenuation.z);
-        } else {
             att = 1.0 / (attenuation.x + d * attenuation.y + d * d * attenuation.z);
+        } else {
+            att = 1.0 / sqrt(attenuation.x + d * attenuation.y + d * d * attenuation.z);
         }
     }
 	vec3 r = reflect(-l, n);
