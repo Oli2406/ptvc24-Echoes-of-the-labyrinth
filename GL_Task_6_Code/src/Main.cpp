@@ -27,6 +27,8 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <deque>
+#include <numeric>
 
 
 #undef min
@@ -56,13 +58,13 @@ void RenderText(std::shared_ptr<Shader> shader, std::string text, float x, float
 void setPBRProperties(Shader* shader, float metallic, float roughness, float ao);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 ImGuiIO setupImGUI(GLFWwindow* window);
-void setupHUD(ImGuiIO io, int keyCounter, int width, int height, int health, GLint splashArt, GLint keyArt);
+void setupHUD(ImGuiIO io, int keyCounter, int width, int height, int health, GLint splashArt, GLint keyArt, float fps);
 void RenderHUD();
 GLuint LoadTexture(const char* filename);
 unsigned int loadTexture(const char* path, bool gammaCorrection);
 void renderQuad();
 void renderCube();
-void processInput(GLFWwindow* window);
+
 
 
 /* --------------------------------------------- */
@@ -104,13 +106,13 @@ bool drawIdle = true;
 bool InfiniteJumpEnabled = false;
 bool drawHud = true;
 
-bool hdr = false;
-float exposure = 1.0f;
+bool hdr = true;
+float exposure = 0.5f;
 
 float link = 0.0f;
 float vor = 0.0f;
 bool hdrKeyPressed = false;
-bool bloom = false;
+bool bloom = true;
 
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
@@ -219,6 +221,7 @@ int main(int argc, char** argv) {
 
     // This function makes the context of the specified window current on the calling thread.
     glfwMakeContextCurrent(window);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // Initialize GLEW
     glewExperimental = true;
@@ -276,6 +279,10 @@ int main(int argc, char** argv) {
 
     initPhysics();
 
+    std::deque<float> deltaTimes;
+    int frameCount = 180;
+    int framerate = 0;
+
     /* --------------------------------------------- */
     // Initialize scene and render loop
     /* --------------------------------------------- */
@@ -298,14 +305,8 @@ int main(int argc, char** argv) {
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
         std::shared_ptr<Texture> torchTexture = std::make_shared<Texture>("assets/textures/torch.dds");
-        
+
         //std::shared_ptr<Texture> keyTexture = std::make_shared<Texture>("assets/textures/gelb.dds");
-
-        // load textures
-    // -------------
-        unsigned int woodTexture = loadTexture("C:/Users/Startklar/Documents/Badie/ptvc24-Echoes-of-the-labyrinth/GL_Task_6_Code/assets/textures/wood.png", true); 
-        unsigned int containerTexture = loadTexture("C:/Users/Startklar/Documents/Badie/ptvc24-Echoes-of-the-labyrinth/GL_Task_6_Code/assets/textures/container2.png", true); // note that we're loading the texture as an SRGB texture
-
 
         DDSImage img = loadDDS(gcgFindTextureFile("assets/textures/Militia-Texture.dds").c_str());
         GLuint texture3;
@@ -396,8 +397,8 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(2.0f), glm::vec3(-2.0f, -4.0f, -1.0f));
-        PointLight pointL(glm::vec3(4.0f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.7f, 1.8f));
+        DirectionalLight dirL(glm::vec3(0.25f), glm::vec3(-2.0f, -4.0f, -1.0f));
+        PointLight pointL(glm::vec3(0.6f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.7f, 1.8f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -518,12 +519,10 @@ int main(int argc, char** argv) {
                     GL_UNSIGNED_BYTE,
                     face->glyph->bitmap.buffer
                 );
-                // set texture options
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                // now store character for later use
                 Character character = {
                     texture,
                     glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
@@ -534,13 +533,10 @@ int main(int argc, char** argv) {
             }
             glBindTexture(GL_TEXTURE_2D, 0);
         }
-        // destroy FreeType once we're finished
         FT_Done_Face(face);
         FT_Done_FreeType(ft);
 
 
-        // configure VAO/VBO for texture quads
-        // -----------------------------------
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
         glBindVertexArray(VAO);
@@ -551,12 +547,14 @@ int main(int argc, char** argv) {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
 
-        // configure (floating point) framebuffers
-     // ---------------------------------------
         unsigned int hdrFBO;
         glGenFramebuffers(1, &hdrFBO);
         glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-        // create 2 floating point color buffers (1 for normal rendering, other for brightness threshold values)
+
+        unsigned int otherBuffer;
+        glGenFramebuffers(1, &otherBuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, otherBuffer);
+        
         unsigned int colorBuffers[2];
         glGenTextures(2, colorBuffers);
         for (unsigned int i = 0; i < 2; i++)
@@ -565,26 +563,25 @@ int main(int argc, char** argv) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, window_width, window_height, 0, GL_RGBA, GL_FLOAT, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            // attach texture to framebuffer
+            
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0);
         }
-        // create and attach depth buffer (renderbuffer)
+        
         unsigned int rboDepth;
         glGenRenderbuffers(1, &rboDepth);
         glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
-        // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
+        
         unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
         glDrawBuffers(2, attachments);
-        // finally check if framebuffer is complete
+        
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             std::cout << "Framebuffer not complete!" << std::endl;
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        // ping-pong-framebuffer for blurring
         unsigned int pingpongFBO[2];
         unsigned int pingpongColorbuffers[2];
         glGenFramebuffers(2, pingpongFBO);
@@ -596,10 +593,9 @@ int main(int argc, char** argv) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, window_width, window_height, 0, GL_RGBA, GL_FLOAT, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
-            // also check if framebuffers are complete (no need for depth buffer)
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
                 std::cout << "Framebuffer not complete!" << std::endl;
         }
@@ -647,7 +643,7 @@ int main(int argc, char** argv) {
         glm::vec3 lightPos(2.0f, 4.0f, 1.0f);
 
         lightPos *= 10;
-        
+
         ImGuiIO io = setupImGUI(window);
 
         string daPath = gcgFindTextureFile("assets/uiPictures/portrait.png");
@@ -660,14 +656,14 @@ int main(int argc, char** argv) {
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            
+
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
             float near_plane = 0.1f, far_plane = 75.0f;
             lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
             lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
-   
+
             glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
             glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
             glClear(GL_DEPTH_BUFFER_BIT);
@@ -676,7 +672,7 @@ int main(int argc, char** argv) {
 
             fireShad.draw();
             torchShad.draw();
-            player1.Draw(depthShader, camDir, false);
+            player1.Draw(depthShader, camDir, won);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             map.Draw(depthShader);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
@@ -689,19 +685,19 @@ int main(int argc, char** argv) {
 
             // reset viewport*/
             glViewport(0, 0, window_width, window_height);
-           
-            glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, otherBuffer);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             if (drawHud) {
-                setupHUD(io, keyCounter, window_width, window_height, health, splashArt, keyArt);
+                setupHUD(io, keyCounter, window_width, window_height, health, splashArt, keyArt, framerate);
             }
 
-            
+
             viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
             camDir = camera.extractCameraDirection(viewMatrix);
             viewProjectionMatrix = projection * viewMatrix;
-            
+
             if (!won) {
                 player1.checkInputs(window, dt, camDir, InfiniteJumpEnabled);
             }
@@ -709,6 +705,10 @@ int main(int argc, char** argv) {
 
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, depthMap);
+
+            sky->use();
+            sky->setUniform("viewProjMatrix", viewProjectionMatrix);
+            skybox.draw();
 
             if (drawWalk && !drawIdle) {
                 skinningShader->use();
@@ -729,7 +729,7 @@ int main(int argc, char** argv) {
                 }
                 player1.Draw(skinningShader, camDir, won);
             }
-            if(drawIdle && !drawWalk) {
+            if (drawIdle && !drawWalk) {
                 skinningShader->use();
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, texture3);
@@ -748,7 +748,7 @@ int main(int argc, char** argv) {
                 }
                 player1.Draw(skinningShader, camDir, won);
             }
-            
+
 
             modelShader->use();
 
@@ -762,16 +762,16 @@ int main(int argc, char** argv) {
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, depthMap);
             }
-            
+
             glm::mat4 floorModel = glm::translate(glm::mat4(1.0f), glm::vec3(0, -0.15f, 0));
-            
+
             modelShader->setUniform("modelMatrix", floorModel);
             modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(floorModel))));
             floor.Draw(modelShader);
             modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
             modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(glm::mat4(1.0f)))));
             map.Draw(modelShader);
-            
+
             if (keyCounter >= 4) {
                 modelShader->setUniform("modelMatrix", glm::mat4(1.0f));
                 modelShader->setUniform("normalMatrix", glm::mat3(glm::transpose(glm::inverse(glm::mat4(1.0f)))));
@@ -790,6 +790,7 @@ int main(int argc, char** argv) {
             setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 0.7f);
             podest.Draw(pbsShader);
             if (pbsDemo) {
+                setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey1, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z)));
                 key.Draw(pbsShader);
                 pbsShader->setUniform("interpolationFactor", 0.001f);
@@ -839,10 +840,12 @@ int main(int argc, char** argv) {
             gScene->simulate(dt);
             gScene->fetchResults(true);
 
-            sky->use();
-            sky->setUniform("viewProjMatrix", viewProjectionMatrix);
-            skybox.draw();
-           
+            
+
+            //glBindFramebuffer(GL_FRAMEBUFFER, otherBuffer);
+
+            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
             // finally show all the light sources as bright cubes
             lightningShader->use();
             lightningShader->setUniform("viewProjMatrix", viewProjectionMatrix);
@@ -875,7 +878,7 @@ int main(int argc, char** argv) {
             lightningShader->setUniform("tex", true);
             lightningShader->setUniform("model", modelDiamiond);
             diamond.Draw(lightningShader);
-            
+
 
             if (keyCounter < 4) {
 
@@ -938,6 +941,7 @@ int main(int argc, char** argv) {
             }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            
 
             bool horizontal = true, first_iteration = true;
             unsigned int amount = 10;
@@ -945,8 +949,9 @@ int main(int argc, char** argv) {
             for (unsigned int i = 1; i < amount; i++)
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 blurrShader->setUniform("horizontal", horizontal);
-                glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
+                glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);
                 renderQuad();
                 horizontal = !horizontal;
                 if (first_iteration)
@@ -954,8 +959,6 @@ int main(int argc, char** argv) {
             }
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
-            // --------------------------------------------------------------------------------------------------------------------------
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             hdrShader->use();
             glActiveTexture(GL_TEXTURE0);
@@ -965,7 +968,7 @@ int main(int argc, char** argv) {
             hdrShader->setUniform("bloom", bloom);
             hdrShader->setUniform("exposure", exposure);
             hdrShader->setUniform("hdr", hdr);
-            renderQuad();            
+            renderQuad();
 
             // Compute frame time
             dt = t;
@@ -973,9 +976,22 @@ int main(int argc, char** argv) {
             dt = (t - dt);
             t_sum += dt;
 
+            deltaTimes.push_back(dt);
+            if (deltaTimes.size() > frameCount) {
+                deltaTimes.pop_front();
+            }
+
+            float averageDt = std::accumulate(deltaTimes.begin(), deltaTimes.end(), 0.0f) / deltaTimes.size();
+            framerate = 1.0f / averageDt;
+
             if (drawHud) {
                 RenderHUD();
+                
             }
+
+            sky->use();
+            sky->setUniform("viewProjMatrix", viewProjectionMatrix);
+            skybox.draw();
 
             // Swap buffers
             glfwSwapBuffers(window);
@@ -1043,7 +1059,7 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
     float y = playerPosition.y;
     float z = playerPosition.z;
     if (x > key1.x - 0.55 && x < key1.x + 0.55 && z > key1.z - 1.7 && z < key1.z - 0.2) {
-        std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
+      
         if (!key1Found) {
             keyCounter++;
         }
@@ -1058,7 +1074,7 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
     }
 
     if (x > key3.x - 0.5 && x < key3.x + 0.5 && z > key3.z - 1.7 && z < key3.z - 0.2) {
-        std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
+    
         if (!key3Found) {
             keyCounter++;
         }
@@ -1066,7 +1082,7 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
     }
 
     if (x > key4.x - 0.5 && x < key4.x + 0.5 && z > key4.z - 1.7 && z < key4.z - 0.2) {
-        std::cout << playerPosition.x << "," << playerPosition.z << std::endl;
+    
         if (!key4Found) {
             keyCounter++;
         }
@@ -1493,10 +1509,11 @@ ImGuiIO setupImGUI(GLFWwindow* window) {
     return io;
 }
 
-void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health, GLint splashArt, GLint keyArt) {
+void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health, GLint splashArt, GLint keyArt, float fps) {
 
     static double start_time = glfwGetTime();
     
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -1550,6 +1567,13 @@ void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health, GLint
         ImGui::Image((void*)(intptr_t)keyArt, ImVec2(width / 10.1, height / 5.4));
     }
     ImGui::End();
+    ImGui::SetNextWindowPos(ImVec2(0, height / 1.05), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(width / 12.8, height / 10.8), ImGuiCond_Once);
+    ImGui::Begin("FPS", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+    {
+        ImGui::Text("FPS: %.1f", fps);
+    }
+    ImGui::End();
 }
 
 void RenderHUD() {
@@ -1581,13 +1605,12 @@ GLuint LoadTexture(const char* filename) {
 
     return textureID;
 }
-// renderCube() renders a 1x1 3D cube in NDC.
-// -------------------------------------------------
+
 unsigned int cubeVAO = 0;
 unsigned int cubeVBO = 0;
 void renderCube()
 {
-    // initialize (if necessary)
+
     if (cubeVAO == 0)
     {
         float vertices[] = {
@@ -1657,13 +1680,13 @@ void renderCube()
 }
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
-unsigned int loadTexture(char const * path, bool gammaCorrection)
+unsigned int loadTexture(char const* path, bool gammaCorrection)
 {
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
-    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
     {
         GLenum internalFormat;
@@ -1702,4 +1725,3 @@ unsigned int loadTexture(char const * path, bool gammaCorrection)
 
     return textureID;
 }
-

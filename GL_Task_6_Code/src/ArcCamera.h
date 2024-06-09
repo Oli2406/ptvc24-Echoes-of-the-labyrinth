@@ -36,7 +36,7 @@ public:
 
 	ArcCamera() {
 		//default values.
-		radius = 1.0f;
+		radius = 3.0f;
 		sensitivity = 0.005f;
 	}
 
@@ -54,7 +54,7 @@ public:
 	mat4 calculateMatrix(float radius, float pitch, float yaw, Player& player) {
 		//compute camera Position with Euler Angles
 		float x = radius * sin(yaw) * cos(pitch) - player.getPosition().x;
-		float y = radius * sin(pitch) + player.getPosition().y + 0.3f;
+		float y = radius * sin(pitch) + player.getPosition().y + 0.25f;
 		float z = radius * cos(yaw) * cos(pitch) + player.getPosition().z;
 		vec3 position(-x, y, z);
 		pos = position;
@@ -111,7 +111,7 @@ public:
 
 	void zoom(float yoffset) {
 		radius -= yoffset;
-		radius = glm::clamp(radius, 2.0f, 10.0f);
+		radius = glm::clamp(radius, 3.0f, 3.0f);
 	}
 	void ArcCamera::updateFrustumPlanes(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
 		glm::mat4 clip = projectionMatrix * viewMatrix;
