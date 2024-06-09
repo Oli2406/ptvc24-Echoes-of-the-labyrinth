@@ -111,7 +111,7 @@ public:
 
 	void zoom(float yoffset) {
 		radius -= yoffset;
-		radius = glm::clamp(radius, 0.0f, 200.0f);
+		radius = glm::clamp(radius, 2.0f, 10.0f);
 	}
 	void ArcCamera::updateFrustumPlanes(const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
 		glm::mat4 clip = projectionMatrix * viewMatrix;
