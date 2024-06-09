@@ -78,14 +78,14 @@ void main() {
     vec3 n = normalize(out_normals);
 	vec3 v = normalize(position_world - camera_world);
 	
-	vec3 F0 = vec3(0.1); // <-- some kind of plastic
+	vec3 F0 = vec3(0.028);
 
 	float cosTheta = abs(dot(-v, n));
 	float reflectionCoefficient = 1;
 	float reflectance = computeFresnelReflectance(reflectionCoefficient, cosTheta);
 
 	vec3 texColor = texture(texture_diffuse, TexCoords).rgb;
-	vec3 ambient = texColor * materialCoefficients.x; // ambient
+	vec3 ambient = texColor * materialCoefficients.x;
 	
 	// add directional light contribution
 	vec3 direct = phong(n, -dirL.direction, -v, dirL.color * texColor, materialCoefficients.y, dirL.color, materialCoefficients.z, specularAlpha, false, vec3(0));
