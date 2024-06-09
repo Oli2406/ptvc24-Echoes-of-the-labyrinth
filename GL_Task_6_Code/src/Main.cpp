@@ -752,9 +752,6 @@ int main(int argc, char** argv) {
 
             modelShader->use();
 
-
-            glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, depthMap);
             if (!won) {
                 modelShader->setUniform("viewProjMatrix", viewProjectionMatrix);
                 modelShader->setUniform("materialCoefficients", materialCoefficients);
@@ -762,6 +759,8 @@ int main(int argc, char** argv) {
                 setPerFrameUniforms(modelShader.get(), camera, dirL, pointL);
                 modelShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
                 modelShader->setUniform("gamma", gammaEnabled);
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, depthMap);
             }
             
             glm::mat4 floorModel = glm::translate(glm::mat4(1.0f), glm::vec3(0, -0.15f, 0));
@@ -799,13 +798,13 @@ int main(int argc, char** argv) {
                 key.Draw(pbsShader);
             }
 
-            glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, depthMap);
             if (!won) {
                 setPerFrameUniforms(textureShader.get(), camera, dirL, pointL);
                 textureShader->setUniform("viewProjMatrix", viewProjectionMatrix);
                 textureShader->setUniform("lightSpaceMatrix", lightSpaceMatrix);
                 textureShader->setUniform("gamma", gammaEnabled);
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, depthMap);
             }
 
             torch.draw();
@@ -834,6 +833,15 @@ int main(int argc, char** argv) {
                     break;
                 }
             }
+
+            gameplay(player1.getPosition(), key1, key2, key3, key4, key5, key6, key7, key8);
+
+            gScene->simulate(dt);
+            gScene->fetchResults(true);
+
+            sky->use();
+            sky->setUniform("viewProjMatrix", viewProjectionMatrix);
+            skybox.draw();
            
             // finally show all the light sources as bright cubes
             lightningShader->use();
@@ -957,20 +965,7 @@ int main(int argc, char** argv) {
             hdrShader->setUniform("bloom", bloom);
             hdrShader->setUniform("exposure", exposure);
             hdrShader->setUniform("hdr", hdr);
-            renderQuad();
-
-            gameplay(player1.getPosition(), key1, key2, key3, key4, key5, key6, key7, key8);
-
-
-
-            gScene->simulate(dt);
-            gScene->fetchResults(true);
-
-            sky->use();
-            sky->setUniform("viewProjMatrix", viewProjectionMatrix);
-            skybox.draw();
-
-            
+            renderQuad();            
 
             // Compute frame time
             dt = t;
