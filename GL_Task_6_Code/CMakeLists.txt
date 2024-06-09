@@ -66,7 +66,7 @@ set(LINK_LIBRARIES
 
 message(LINK_LIBRARIES=${LINK_LIBRARIES})
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${IMGUI_SOURCES} "src/ImGuiHUD.h")
+add_executable(${PROJECT_NAME} ${SOURCES} ${IMGUI_SOURCES} "src/ImGuiHUD.h" "src/puzzle.h")
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS} ${IMGUI_INCLUDE_DIRS})
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBRARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBRARIES})
