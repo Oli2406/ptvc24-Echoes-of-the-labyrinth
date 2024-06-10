@@ -307,9 +307,6 @@ int main(int argc, char** argv) {
 
         //std::shared_ptr<Texture> keyTexture = std::make_shared<Texture>("assets/textures/gelb.dds");
 
-        unsigned int containerTexture = loadTexture("C:/Users/Startklar/Documents/Badie/ptvc24-Echoes-of-the-labyrinth/GL_Task_6_Code/assets/textures/container2.png", true); // note that we're loading the texture as an SRGB texture
-
-
         DDSImage img = loadDDS(gcgFindTextureFile("assets/textures/Militia-Texture.dds").c_str());
         GLuint texture3;
         glGenTextures(1, &texture3);
@@ -603,7 +600,7 @@ int main(int argc, char** argv) {
         // colors
         std::vector<glm::vec3> lightColors;
         lightColors.push_back(glm::vec3(5.0f, 5.0f, 5.0f));
-        lightColors.push_back(glm::vec3(150.0f, 150.0f, 150.0f));
+        lightColors.push_back(glm::vec3(50.0f, 50.0f, 50.0f));
         lightColors.push_back(glm::vec3(1.5f, 1.5f, 1.5f));
         lightColors.push_back(glm::vec3(20.0f, 20.0f, 20.0f));
 
