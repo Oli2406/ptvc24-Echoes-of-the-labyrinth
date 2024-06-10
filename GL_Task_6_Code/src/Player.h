@@ -34,11 +34,12 @@ private:
     PxVec3 velocity;
     const float normalSpeedMultiplier = 1.0f;
     const float boostedSpeedMultiplier = 3.0f;
+    int health;
 
 
 public:
     Player(Model model, float rotX, float rotY, float rotZ, float scale, PxController* characterController)
-        : model(model), characterController(characterController), velocity(0.0f, 0.0f, 0.0f)
+        : model(model), characterController(characterController), velocity(0.0f, 0.0f, 0.0f), health(70)
     {
         this->position = PxVec3(characterController->getPosition().x, characterController->getPosition().y, characterController->getPosition().z);
     }
@@ -50,6 +51,10 @@ public:
 
     Model getModel() const {
         return model;
+    }
+
+    int getHealth() {
+        return health;
     }
 
     void updateModelMatrix(glm::vec3 camDir) {
@@ -142,6 +147,18 @@ public:
 
         if (characterController->getActor()->getGlobalPose().p.y < -5.0f) {
             characterController->setPosition(PxExtendedVec3(5, 2, 5));
+        }
+
+        if (characterController->getActor()->getGlobalPose().p.y < 0.0f) {
+            if (health > 100) {
+                health--;
+            }
+        }
+
+        if (characterController->getActor()->getGlobalPose().p.y >= 2.0f) {
+            if (health < 100) {
+                health = 70;
+            }
         }
 
         displacement.y += velocity.y * delta;
