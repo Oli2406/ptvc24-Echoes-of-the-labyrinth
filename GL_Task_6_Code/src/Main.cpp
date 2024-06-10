@@ -112,7 +112,7 @@ float exposure = 0.5f;
 float link = 0.0f;
 float vor = 0.0f;
 bool hdrKeyPressed = false;
-bool bloom = true;
+bool bloom = false;
 
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
@@ -280,7 +280,7 @@ int main(int argc, char** argv) {
     initPhysics();
 
     std::deque<float> deltaTimes;
-    int frameCount = 180;
+    int frameCount = refresh_rate * 3;
     int framerate = 0;
 
     /* --------------------------------------------- */
@@ -397,7 +397,7 @@ int main(int argc, char** argv) {
         camera.setCamParameters(fov, float(window_width) / float(window_height), nearZ, farZ, camera_yaw, camera_pitch);
 
         // Initialize lights
-        DirectionalLight dirL(glm::vec3(0.25f), glm::vec3(-2.0f, -4.0f, -1.0f));
+        DirectionalLight dirL(glm::vec3(0.3f), glm::vec3(-2.0f, -4.0f, -1.0f));
         PointLight pointL(glm::vec3(0.6f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.7f, 1.8f));
 
         // Render loop
@@ -438,12 +438,10 @@ int main(int argc, char** argv) {
         glm::mat4 fireModel = glm::translate(glm::mat4(1), glm::vec3(0, 2.5, 0));
 
 
-        // configure depth map FBO
-        // -----------------------
         const unsigned int SHADOW_WIDTH = 16384, SHADOW_HEIGHT = 8192;
         unsigned int depthMapFBO;
         glGenFramebuffers(1, &depthMapFBO);
-        // create depth texture
+        
         unsigned int depthMap;
         glGenTextures(1, &depthMap);
         glBindTexture(GL_TEXTURE_2D, depthMap);
@@ -454,7 +452,7 @@ int main(int argc, char** argv) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
         float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-        // attach depth texture as FBO's depth buffer
+       
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
         glDrawBuffer(GL_NONE);
@@ -683,14 +681,13 @@ int main(int argc, char** argv) {
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            // reset viewport*/
             glViewport(0, 0, window_width, window_height);
 
             glBindFramebuffer(GL_FRAMEBUFFER, otherBuffer);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             if (drawHud) {
-                setupHUD(io, keyCounter, window_width, window_height, health, splashArt, keyArt, framerate);
+                setupHUD(io, keyCounter, window_width, window_height, player1.getHealth(), splashArt, keyArt, framerate);
             }
 
 
@@ -820,7 +817,7 @@ int main(int argc, char** argv) {
                 //glClear(GL_COLOR_BUFFER_BIT);
                 //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-                RenderText(fontShader, "You Won!", 480.0f, 500.0f, 5.0f, glm::vec3(0.5, 0.8f, 0.2f));
+                RenderText(fontShader, "You Won!", window_width / 4, window_height / 2.16, 5.0f, glm::vec3(0.5, 0.8f, 0.2f));
 
                 if (startTime == 0.0f) {
 
@@ -835,16 +832,17 @@ int main(int argc, char** argv) {
                 }
             }
 
+            if (t_sum < 10.0f) {
+                glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window_width), 0.0f, static_cast<float>(window_height));
+                fontShader->use();
+                fontShader->setUniform("projection", projection);
+                RenderText(fontShader, "Collect 4 keys to win.", window_width / 5, window_height / 2.2, 2.5f, glm::vec3(1.0f, 1.0f, 1.0f));
+            }
+            
             gameplay(player1.getPosition(), key1, key2, key3, key4, key5, key6, key7, key8);
 
             gScene->simulate(dt);
             gScene->fetchResults(true);
-
-            
-
-            //glBindFramebuffer(GL_FRAMEBUFFER, otherBuffer);
-
-            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // finally show all the light sources as bright cubes
             lightningShader->use();
@@ -939,10 +937,7 @@ int main(int argc, char** argv) {
                     key.Draw(lightningShader);
                 }
             }
-
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            
-
             bool horizontal = true, first_iteration = true;
             unsigned int amount = 10;
             blurrShader->use();
@@ -975,6 +970,7 @@ int main(int argc, char** argv) {
             t = float(glfwGetTime());
             dt = (t - dt);
             t_sum += dt;
+
 
             deltaTimes.push_back(dt);
             if (deltaTimes.size() > frameCount) {
@@ -1061,9 +1057,10 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
     if (x > key1.x - 0.55 && x < key1.x + 0.55 && z > key1.z - 1.7 && z < key1.z - 0.2) {
       
         if (!key1Found) {
-            keyCounter++;
+            
         }
         key1Found = true;
+        
     }
 
     if (x > key2.x - 0.5 && x < key2.x + 0.5 && z > key2.z - 1.7 && z < key2.z - 0.2) {
@@ -1117,7 +1114,7 @@ void gameplay(glm::vec3 playerPosition, glm::vec3 key1, glm::vec3 key2, glm::vec
         key8Found = true;
     }
 
-    if (x < 0 + 1.2 && x > 0 - 1.2 && z < 0 + 1.2 && z > 0 - 1.2 && y > -2.0 && y < 2.0) {
+    if (x < 0 + 1.2 && x > 0 - 1.2 && z < 0 + 1.2 && z > 0 - 1.2 && y > -2.0 && y < 2.0 && keyCounter >= 4) {
         won = true;
     }
 }
