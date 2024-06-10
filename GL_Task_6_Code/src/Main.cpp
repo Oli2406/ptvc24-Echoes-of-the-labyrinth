@@ -369,12 +369,12 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0], gPhysics, gScene, false, false);
 
-        string path4 = gcgFindTextureFile("assets/geometry/adventurer/walk.glb");
+        string path4 = gcgFindTextureFile("assets/geometry/adventurer/walk.fbx");
         Model adventurer(&path4[0], gPhysics, gScene, true, false);
         Animation idle(path4, &adventurer);
         Animator idleAnimator(&idle);
 
-        string walkPath = gcgFindTextureFile("assets/geometry/adventurer/idle.glb");
+        string walkPath = gcgFindTextureFile("assets/geometry/adventurer/idle.fbx");
         Model walkModel(&walkPath[0], false);
         Animation walk(walkPath, &walkModel);
         Animator walkAnimator(&walk);
@@ -600,7 +600,7 @@ int main(int argc, char** argv) {
         // colors
         std::vector<glm::vec3> lightColors;
         lightColors.push_back(glm::vec3(5.0f, 5.0f, 5.0f));
-        lightColors.push_back(glm::vec3(50.0f, 50.0f, 50.0f));
+        lightColors.push_back(glm::vec3(150.0f, 150.0f, 150.0f));
         lightColors.push_back(glm::vec3(1.5f, 1.5f, 1.5f));
         lightColors.push_back(glm::vec3(20.0f, 20.0f, 20.0f));
 
@@ -935,7 +935,7 @@ int main(int argc, char** argv) {
             }
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             bool horizontal = true, first_iteration = true;
-            unsigned int amount = 10;
+            unsigned int amount = 20;
             blurrShader->use();
             for (unsigned int i = 1; i < amount; i++)
             {
