@@ -398,7 +398,7 @@ int main(int argc, char** argv) {
 
         // Initialize lights
         DirectionalLight dirL(glm::vec3(0.3f), glm::vec3(-2.0f, -4.0f, -1.0f));
-        PointLight pointL(glm::vec3(0.6f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.7f, 1.8f));
+        PointLight pointL(glm::vec3(1.8f), glm::vec3(0, 5, 0), glm::vec3(1.0f, 0.7f, 1.8f));
 
         // Render loop
         float t = float(glfwGetTime());
@@ -687,7 +687,7 @@ int main(int argc, char** argv) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             if (drawHud) {
-                setupHUD(io, keyCounter, window_width, window_height, player1.getHealth(), splashArt, keyArt, framerate);
+                setupHUD(io, keyCounter, window_width, window_height, health, splashArt, keyArt, framerate);
             }
 
 
@@ -788,8 +788,12 @@ int main(int argc, char** argv) {
             podest.Draw(pbsShader);
             if (pbsDemo) {
                 setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
+                pbsShader->setUniform("interpolationFactor", 0.007f);
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey1, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z)));
                 key.Draw(pbsShader);
+                pbsShader->setUniform("interpolationFactor", 1.0f);
+                pbsShader->setUniform("modelMatrix", glm::mat4(1.0f));
+                map.Draw(pbsShader);
                 pbsShader->setUniform("interpolationFactor", 0.001f);
                 pbsShader->setUniform("modelMatrix", glm::translate(demokey2, vec3(player1.getPosition().x - 1, player1.getPosition().y, player1.getPosition().z + 2)));
                 setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 1.0f);
@@ -1237,14 +1241,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     case GLFW_KEY_DOWN:
         if (action == GLFW_PRESS) {
             if (exposure > 0.0f)
-                exposure -= 10.001f;
+                exposure -= 0.1f;
             else
                 exposure = 0.0f;
         }
         break;
     case GLFW_KEY_UP:
         if (action == GLFW_PRESS) {
-            exposure += 10.001f;
+            exposure += 0.1f;
         }
         break;
     case GLFW_KEY_P:
