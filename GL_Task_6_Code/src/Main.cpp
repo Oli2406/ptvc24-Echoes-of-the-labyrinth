@@ -293,7 +293,6 @@ int main(int argc, char** argv) {
         std::shared_ptr<Shader> hdrShader = std::make_shared<Shader>("assets/shaders/hdr.vert", "assets/shaders/hdr.frag");
         std::shared_ptr<Shader> lightningShader = std::make_shared<Shader>("assets/shaders/lightning.vert", "assets/shaders/lightning.frag");
         std::shared_ptr<Shader> blurrShader = std::make_shared<Shader>("assets/shaders/blurr.vert", "assets/shaders/blurr.frag");
-        std::shared_ptr<Shader> bloomShader = std::make_shared<Shader>("assets/shaders/bloom.vert", "assets/shaders/bloom.frag");
 
         // Create textures
         std::shared_ptr<Texture> fireTexture = std::make_shared<Texture>("assets/textures/fire.dds");
@@ -303,9 +302,6 @@ int main(int argc, char** argv) {
 
         // load textures
     // -------------
-        unsigned int woodTexture = loadTexture("C:/Users/Startklar/Documents/Badie/ptvc24-Echoes-of-the-labyrinth/GL_Task_6_Code/assets/textures/wood.png", true); 
-        unsigned int containerTexture = loadTexture("C:/Users/Startklar/Documents/Badie/ptvc24-Echoes-of-the-labyrinth/GL_Task_6_Code/assets/textures/container2.png", true); // note that we're loading the texture as an SRGB texture
-
 
         DDSImage img = loadDDS(gcgFindTextureFile("assets/textures/Militia-Texture.dds").c_str());
         GLuint texture3;
@@ -369,12 +365,12 @@ int main(int argc, char** argv) {
         string path3 = gcgFindTextureFile("assets/geometry/diamond/diamond.obj");
         Model diamond(&path3[0], gPhysics, gScene, false, false);
 
-        string path4 = gcgFindTextureFile("assets/geometry/adventurer/walk.fbx");
+        string path4 = gcgFindTextureFile("assets/geometry/adventurer/walk.glb");
         Model adventurer(&path4[0], gPhysics, gScene, true, false);
         Animation idle(path4, &adventurer);
         Animator idleAnimator(&idle);
 
-        string walkPath = gcgFindTextureFile("assets/geometry/adventurer/idle.fbx");
+        string walkPath = gcgFindTextureFile("assets/geometry/adventurer/idle.glb");
         Model walkModel(&walkPath[0], false);
         Animation walk(walkPath, &walkModel);
         Animator walkAnimator(&walk);
@@ -638,8 +634,6 @@ int main(int argc, char** argv) {
         hdrShader->use();
         hdrShader->setUniform("scene", 0);
         hdrShader->setUniform("bloomBlur", 1);
-        bloomShader->use();
-        bloomShader->setUniform("diffuseTexture", 0);
         blurrShader->use();
         blurrShader->setUniform("image", 0);
 
@@ -679,11 +673,6 @@ int main(int argc, char** argv) {
             player1.Draw(depthShader, camDir, false);
             depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
             map.Draw(depthShader);
-            depthShader->setUniform("modelMatrix", glm::mat4(1.0f));
-            podest.Draw(depthShader);
-            modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-            depthShader->setUniform("modelMatrix", modelDiamiond);
-            diamond.Draw(depthShader);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -868,7 +857,7 @@ int main(int argc, char** argv) {
             fireShad.updateModelMatrix(glm::scale(glm::translate(play, firePosition), glm::vec3(0.1f, 0.1f, 0.1f)));
             torchShad.updateModelMatrix(glm::scale(glm::translate(play, torchPosition), glm::vec3(0.1f, 0.4f, 0.1f)));
 
-            pointL.position = player1.getPosition() + glm::vec3(0.4f, 1.5f, 0.0f);
+            pointL.position = player1.getPosition() + glm::vec3(0.5f, -1.125f, 0.0f);
 
             modelDiamiond = glm::rotate(modelDiamiond, glm::radians(0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
             lightningShader->setUniform("lightColor", lightColors[3]);
