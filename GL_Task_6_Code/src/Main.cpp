@@ -691,13 +691,11 @@ int main(int argc, char** argv) {
                 setupHUD(io, keyCounter, window_width, window_height, health, splashArt, keyArt, framerate);
             }
 
-
-            viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
-            camDir = camera.extractCameraDirection(viewMatrix);
-            viewProjectionMatrix = projection * viewMatrix;
-
             if (!won) {
                 player1.checkInputs(window, dt, camDir, InfiniteJumpEnabled);
+                viewMatrix = camera.calculateMatrix(camera.getRadius(), camera.getPitch(), camera.getYaw(), player1);
+                camDir = camera.extractCameraDirection(viewMatrix);
+                viewProjectionMatrix = projection * viewMatrix;
             }
 
 
@@ -1523,7 +1521,7 @@ void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health, GLint
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
+    ImVec4 clear_color = ImVec4(0.0f, 0.0f, .0f, 1.00f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, clear_color);
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
