@@ -112,7 +112,7 @@ float exposure = 0.5f;
 float link = 0.0f;
 float vor = 0.0f;
 bool hdrKeyPressed = false;
-bool bloom = false;
+bool bloom = true;
 
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
@@ -388,6 +388,9 @@ int main(int argc, char** argv) {
         string path7 = gcgFindTextureFile("assets/geometry/lava/lava.obj");
         Model lava(&path7[0], true);
 
+        string path8 = gcgFindTextureFile("assets/geometry/statue/statue.obj");
+        Model statue(&path8[0], true);
+
         Player player1 = Player(adventurer, 0.0f, 0.0f, 0.0f, 1.0f, adventurer.getController());
 
         player1.set(adventurer);
@@ -646,6 +649,12 @@ int main(int argc, char** argv) {
         string keyPath = gcgFindTextureFile("assets/uiPictures/key.png");
         GLuint keyArt = LoadTexture(keyPath.c_str());
 
+        glm::mat4 statueModel = glm::mat4(1.0f);
+        statueModel = glm::translate(statueModel, glm::vec3(11.0f, 0.0f, 0.0f));
+        statueModel = glm::scale(statueModel, glm::vec3(0.025f));
+        statueModel = glm::rotate(statueModel, glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        
+
         while (!glfwWindowShouldClose(window)) {
 
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -778,6 +787,10 @@ int main(int argc, char** argv) {
             setPerFrameUniforms(pbsShader.get(), camera, dirL, pointL);
             setPBRProperties(pbsShader.get(), 0.0f, 0.9f, 0.7f);
             podest.Draw(pbsShader);
+            pbsShader->setUniform("modelMatrix", statueModel);
+            pbsShader->setUniform("interpolationFactor", 0.8f);
+            setPBRProperties(pbsShader.get(), 0.0f, 0.1f, 1.0f);
+            statue.Draw(pbsShader);
             if (pbsDemo) {
                 setPBRProperties(pbsShader.get(), 1.0f, 0.4f, 1.0f);
                 pbsShader->setUniform("interpolationFactor", 0.007f);
@@ -802,38 +815,6 @@ int main(int argc, char** argv) {
             }
 
             torch.draw();
-
-            if (won) {
-
-                glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window_width), 0.0f, static_cast<float>(window_height));
-                fontShader->use();
-                fontShader->setUniform("projection", projection);
-                //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-                //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-                //glClear(GL_COLOR_BUFFER_BIT);
-                //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-                RenderText(fontShader, "You Won!", window_width / 4, window_height / 2.16, 5.0f, glm::vec3(0.5, 0.8f, 0.2f));
-
-                if (startTime == 0.0f) {
-
-                    startTime = glfwGetTime();
-                }
-
-                float currentTime = glfwGetTime();
-                if (currentTime - startTime >= 15.0f) {
-
-                    std::cout << "5 seconds have passed!" << std::endl;
-                    break;
-                }
-            }
-
-            if (t_sum < 10.0f) {
-                glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window_width), 0.0f, static_cast<float>(window_height));
-                fontShader->use();
-                fontShader->setUniform("projection", projection);
-                RenderText(fontShader, "Collect 4 keys to win.", window_width / 5, window_height / 2.2, 2.5f, glm::vec3(1.0f, 1.0f, 1.0f));
-            }
             
             gameplay(player1.getPosition(), key1, key2, key3, key4, key5, key6, key7, key8);
 
@@ -932,6 +913,37 @@ int main(int argc, char** argv) {
                     lightningShader->setUniform("tex", true);
                     key.Draw(lightningShader);
                 }
+            }
+            if (won) {
+
+                glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window_width), 0.0f, static_cast<float>(window_height));
+                fontShader->use();
+                fontShader->setUniform("projection", projection);
+                //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+                //glClear(GL_COLOR_BUFFER_BIT);
+                //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                RenderText(fontShader, "You Won!", window_width / 4, window_height / 2.16, 5.0f, glm::vec3(0.5, 0.8f, 0.2f));
+
+                if (startTime == 0.0f) {
+
+                    startTime = glfwGetTime();
+                }
+
+                float currentTime = glfwGetTime();
+                if (currentTime - startTime >= 15.0f) {
+
+                    std::cout << "5 seconds have passed!" << std::endl;
+                    break;
+                }
+            }
+
+            if (t_sum < 10.0f) {
+                glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window_width), 0.0f, static_cast<float>(window_height));
+                fontShader->use();
+                fontShader->setUniform("projection", projection);
+                RenderText(fontShader, "Collect 4 keys to win.", window_width / 5, window_height / 2.2, 2.5f, glm::vec3(1.0f, 1.0f, 1.0f));
             }
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             bool horizontal = true, first_iteration = true;
@@ -1510,6 +1522,9 @@ void setupHUD(ImGuiIO io, int keyCount, int width, int height, int health, GLint
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, clear_color);
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(width / 8.1, height / 5.5), ImGuiCond_Once);

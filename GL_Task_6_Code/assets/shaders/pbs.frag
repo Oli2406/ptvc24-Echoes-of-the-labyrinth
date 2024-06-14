@@ -7,6 +7,8 @@ in vec4 FragPosLightSpace;
 
 out vec4 color;
 
+layout (location = 1) out vec4 BrightColor;
+
 uniform vec3 camera_world;
 
 uniform sampler2D texture_diffuse;  // Texture unit 0
@@ -161,6 +163,13 @@ void main() {
     finalColor = finalColor / (finalColor + vec3(1.0));
     finalColor = pow(finalColor, vec3(1.0 / 2.2));
     
+    // Calculate brightness for bloom
+    float brightness = dot(finalColor, vec3(0.2126, 0.7152, 0.0722));
+    if(brightness > 1.0)
+        BrightColor = vec4(finalColor, 1.0);
+    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+
     if (draw_normals) {
         finalColor = N;
     }
